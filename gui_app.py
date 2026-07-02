@@ -13,9 +13,10 @@ from config import ASSISTANT_NAME, USER_NAME, FAST_MODEL, SMART_MODEL, COUNCIL_T
 
 class VoiceAssistantGUI:
     """
-    Bug fixes from v1:
-      - 'pachy=5' typo corrected to 'pady=5' on the status label
-      - tag_config changed from 'fg=' to 'foreground=' (correct Tkinter keyword)
+    Adds short-term chat memory buffer (self.chat_history).
+    Previous messages are now passed into each Ollama call so the
+    assistant can remember earlier turns within the same session.
+    History is capped at 20 messages to keep context windows manageable.
     """
     def __init__(self, root):
         self.root = root
@@ -23,10 +24,11 @@ class VoiceAssistantGUI:
         self.root.geometry("700x550")
         self.root.configure(bg="#121212")
 
-        # Fixed: pady=5 (was pachy=5)
+        # Short-term memory buffer — cleared on restart
+        self.chat_history = []
+
         self.status_label = tk.Label(
-            root,
-            text="SYSTEM STATUS: ONLINE",
+            root, text="SYSTEM STATUS: ONLINE",
             font=("Consolas", 10, "bold"),
             bg="#1a1a1a", fg="#00ffcc", anchor="w", pady=5
         )
@@ -38,7 +40,6 @@ class VoiceAssistantGUI:
         )
         self.log_display.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
 
-        # Fixed: foreground= (was fg=)
         self.log_display.tag_config("sys",  foreground="#00ffcc")
         self.log_display.tag_config("user", foreground="#ffcc00")
         self.log_display.tag_config("ace",  foreground="#ffffff")
@@ -152,17 +153,27 @@ class VoiceAssistantGUI:
                 active_model = FAST_MODEL
                 self.set_status(f"Fast model: {FAST_MODEL}", "#00ffcc")
 
+            # Build message list with system prompt + full chat history
+            messages = [
+                {"role": "system",
+                 "content": f"You are {ASSISTANT_NAME}, a warm, direct, brief personal assistant."}
+            ]
+            messages.extend(self.chat_history)
+            messages.append({"role": "user", "content": command})
+
             try:
-                response = ollama.chat(
-                    model=active_model,
-                    messages=[
-                        {"role": "system",
-                         "content": f"You are {ASSISTANT_NAME}, a warm, direct, brief personal assistant."},
-                        {"role": "user", "content": command},
-                    ]
-                )
-                reply = response['message']['content']
+                response = ollama.chat(model=active_model, messages=messages)
+                reply    = response['message']['content']
                 self.append_log(f"{ASSISTANT_NAME}: {reply}\n", "ace")
+
+                # Update memory buffer
+                self.chat_history.append({"role": "user",      "content": command})
+                self.chat_history.append({"role": "assistant",  "content": reply})
+
+                # Cap at 20 messages to avoid context overflow
+                if len(self.chat_history) > 20:
+                    self.chat_history = self.chat_history[-20:]
+
                 speak_text(reply)
             except Exception as e:
                 self.append_log(f"[Error: {e}]\n", "err")
