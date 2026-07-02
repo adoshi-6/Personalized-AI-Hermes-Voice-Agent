@@ -53,12 +53,14 @@ def handle_standard_chat(user_query: str):
 
 def main():
     """
-    Dual-input mode: press Enter to speak, or type a command directly.
-    Restores keyboard input alongside the voice listener.
+    Dual-input mode with exit command.
+    Added 'exit' and 'quit' as graceful shutdown keywords,
+    intercepted before reaching the AI models.
     """
     print("\n" + "=" * 56)
     print(f"  {ASSISTANT_NAME} — Voice + Keyboard Mode")
     print(f"  Press [ENTER] to talk, or type your command.")
+    print(f"  Type 'exit' or 'quit' to shut down.")
     print("=" * 56 + "\n")
 
     speak_text(f"System active, {USER_NAME}. Standing by.")
@@ -67,15 +69,19 @@ def main():
         user_choice = input("\n[Press ENTER to talk / or type your command]: ").strip()
 
         if user_choice == "":
-            # Voice input
             user_command = listen_to_user()
             if not user_command:
                 print("[No speech captured. Try again.]")
                 continue
         else:
-            # Typed input
             user_command = user_choice
             print(f'[Typed input: "{user_command}"]')
+
+        # Clean exit gate — checked before routing to any model
+        if user_command.lower() in ["exit", "quit"]:
+            print("\n[Shutting down...]")
+            speak_text(f"Goodbye, {USER_NAME}.")
+            sys.exit(0)
 
         if should_trigger_council(user_command):
             debate_packet = run_council_debate(user_command)
