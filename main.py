@@ -9,10 +9,7 @@ from config import ASSISTANT_NAME, USER_NAME, FAST_MODEL, SMART_MODEL, COUNCIL_T
 
 
 def should_trigger_council(user_input: str) -> bool:
-    """
-    Checks if the input contains a council trigger keyword
-    while respecting negation modifiers like 'don't' or 'skip'.
-    """
+    """Detects council keywords while respecting negation modifiers."""
     text      = user_input.lower()
     negations = ["don't", "dont", "do not", "never", "without", "skip", "stop"]
 
@@ -23,21 +20,24 @@ def should_trigger_council(user_input: str) -> bool:
         if neg in text:
             for kw in COUNCIL_TRIGGERS:
                 if kw in text and text.find(neg) < text.find(kw):
-                    print(f"[Negation detected: skipping council]")
                     return False
     return True
 
 
 def handle_standard_chat(user_query: str):
-    """Routes standard queries to the appropriate model based on complexity."""
+    """
+    Routes queries to either the fast or smart model depending on complexity.
+    Fast model: quick conversational replies.
+    Smart model: triggered by 'think deeply', 'smart mode', or 'analyze'.
+    """
     text = user_query.lower()
 
     if "think deeply" in text or "smart mode" in text or "analyze" in text:
         active_model = SMART_MODEL
-        print(f"[Routing to smart model: {SMART_MODEL}]")
+        print(f"[Smart model: {SMART_MODEL}]")
     else:
         active_model = FAST_MODEL
-        print(f"[Routing to fast model: {FAST_MODEL}]")
+        print(f"[Fast model: {FAST_MODEL}]")
 
     try:
         response = ollama.chat(
@@ -57,8 +57,8 @@ def handle_standard_chat(user_query: str):
 
 def main():
     print("\n" + "=" * 56)
-    print(f"  {ASSISTANT_NAME} — Wake Word Mode")
-    print(f"  Say '{ASSISTANT_NAME}' or the wake phrase to activate.")
+    print(f"  {ASSISTANT_NAME} — Hybrid Model Mode")
+    print(f"  Fast: {FAST_MODEL}  |  Smart: {SMART_MODEL}")
     print("=" * 56 + "\n")
 
     speak_text(f"System active, {USER_NAME}. Standing by.")
@@ -68,12 +68,11 @@ def main():
         wake_check = listen_to_user()
 
         if wake_check and ASSISTANT_NAME.lower() in wake_check.lower():
-            print(f"\n[Wake phrase detected]")
+            print("[Wake phrase detected]")
             speak_text(f"Yes, {USER_NAME}?")
 
             user_command = listen_to_user()
             if not user_command:
-                print("[No command captured. Returning to standby.]")
                 continue
 
             if should_trigger_council(user_command):
