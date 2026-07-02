@@ -25,11 +25,7 @@ def should_trigger_council(user_input: str) -> bool:
 
 
 def handle_standard_chat(user_query: str):
-    """
-    Routes queries to either the fast or smart model depending on complexity.
-    Fast model: quick conversational replies.
-    Smart model: triggered by 'think deeply', 'smart mode', or 'analyze'.
-    """
+    """Routes to fast or smart model based on complexity keywords."""
     text = user_query.lower()
 
     if "think deeply" in text or "smart mode" in text or "analyze" in text:
@@ -56,43 +52,49 @@ def handle_standard_chat(user_query: str):
 
 
 def main():
+    """
+    Dual-input mode: press Enter to speak, or type a command directly.
+    Restores keyboard input alongside the voice listener.
+    """
     print("\n" + "=" * 56)
-    print(f"  {ASSISTANT_NAME} — Hybrid Model Mode")
-    print(f"  Fast: {FAST_MODEL}  |  Smart: {SMART_MODEL}")
+    print(f"  {ASSISTANT_NAME} — Voice + Keyboard Mode")
+    print(f"  Press [ENTER] to talk, or type your command.")
     print("=" * 56 + "\n")
 
     speak_text(f"System active, {USER_NAME}. Standing by.")
 
     while True:
-        print("[Listening for wake word...]")
-        wake_check = listen_to_user()
+        user_choice = input("\n[Press ENTER to talk / or type your command]: ").strip()
 
-        if wake_check and ASSISTANT_NAME.lower() in wake_check.lower():
-            print("[Wake phrase detected]")
-            speak_text(f"Yes, {USER_NAME}?")
-
+        if user_choice == "":
+            # Voice input
             user_command = listen_to_user()
             if not user_command:
+                print("[No speech captured. Try again.]")
                 continue
+        else:
+            # Typed input
+            user_command = user_choice
+            print(f'[Typed input: "{user_command}"]')
 
-            if should_trigger_council(user_command):
-                debate_packet = run_council_debate(user_command)
+        if should_trigger_council(user_command):
+            debate_packet = run_council_debate(user_command)
 
-                print(f"\n[CONTRARIAN]:\n{debate_packet['contrarian']}")
-                speak_text("Contrarian analysis.")
-                speak_text(debate_packet['contrarian'])
-                time.sleep(0.5)
+            print(f"\n[CONTRARIAN]:\n{debate_packet['contrarian']}")
+            speak_text("Contrarian analysis.")
+            speak_text(debate_packet['contrarian'])
+            time.sleep(0.5)
 
-                print(f"\n[SYNERGIST]:\n{debate_packet['synergist']}")
-                speak_text("Synergist strategy.")
-                speak_text(debate_packet['synergist'])
-                time.sleep(0.5)
+            print(f"\n[SYNERGIST]:\n{debate_packet['synergist']}")
+            speak_text("Synergist strategy.")
+            speak_text(debate_packet['synergist'])
+            time.sleep(0.5)
 
-                print(f"\n[CHAIRMAN]:\n{debate_packet['chairman']}")
-                speak_text("Chairman verdict.")
-                speak_text(debate_packet['chairman'])
-            else:
-                handle_standard_chat(user_command)
+            print(f"\n[CHAIRMAN]:\n{debate_packet['chairman']}")
+            speak_text("Chairman verdict.")
+            speak_text(debate_packet['chairman'])
+        else:
+            handle_standard_chat(user_command)
 
         time.sleep(0.1)
 
