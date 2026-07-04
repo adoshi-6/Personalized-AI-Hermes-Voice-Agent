@@ -1,0 +1,46 @@
+# Secrets — never commit these
+.env
+*.env
+secrets.toml
+
+# Security files — PIN hash and code word config
+ace_security/
+
+# Self-learning memory — personal data
+ace_memory/
+
+# Conversation history — personal data
+conversation_history.json
+
+# Audio output files
+ace_speech.mp3
+ace_speech.wav
+diagnostic_test.mp3
+*.mp3
+*.wav
+
+# Piper offline voice model files
+piper_voices/
+
+# Voice audition temp files
+voice_sample_*.mp3
+audition_clip_*.mp3
+shortlist_sample_*.mp3
+master_audition_sample_*.mp3
+mega_sample_*.mp3
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# Logs
+logs/
+ace_log.txt
+
+# OS noise
+.DS_Store
+Thumbs.db
