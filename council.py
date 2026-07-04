@@ -1,22 +1,26 @@
 import ollama
 import re
 
+# ==================================================
+# MODEL SELECTION
+# Set this to the model you have pulled in Ollama.
+# ==================================================
 from config import SMART_MODEL
-
 LOCAL_MODEL = SMART_MODEL
 
 
-def _chat(system: str, user: str) -> str:
-    """Single model call. Strips reasoning blocks from thinking models."""
+def _chat(prompt_system: str, prompt_user: str) -> str:
+    """Single call to the local model. Strips <think> blocks from reasoning models."""
     try:
         response = ollama.chat(
             model=LOCAL_MODEL,
             messages=[
-                {"role": "system", "content": system},
-                {"role": "user",   "content": user},
+                {"role": "system", "content": prompt_system},
+                {"role": "user", "content": prompt_user},
             ]
         )
         raw = response['message']['content']
+        # Strip reasoning blocks emitted by deepseek/qwen thinking models
         return re.sub(r'<think>[\s\S]*?</think>', '', raw).strip()
     except Exception as e:
         return f"[Agent unavailable: {e}]"
@@ -24,63 +28,65 @@ def _chat(system: str, user: str) -> str:
 
 def run_council_debate(user_idea: str) -> dict:
     """
-    Full 6-seat council debate.
+    Runs a full 6-seat council debate on the user's idea.
 
-    Expanded from 3 agents (Contrarian, Synergist, Chairman) to 6:
-      1. Contrarian       — risks and flaws
-      2. First Principles — rebuild from axioms
-      3. Expansionist     — hidden upside and scale
-      4. Outsider         — objective, no jargon
-      5. Executor         — one concrete next action
-      6. Chairman         — synthesises all five
+    Returns a dict with keys:
+        contrarian, first_principles, expansionist, outsider, executor, chairman
 
-    Returns a dict with all six agent keys.
+    BUG FIX (v2): previously returned a plain string, which caused KeyError
+    crashes in gui_app.py and main.py whenever council was triggered.
     """
     print("\n==================================================")
-    print("  Council Chamber Active — 6 Agents")
+    print(" COUNCIL CHAMBER ACTIVE: INITIATING DEBATE        ")
     print("==================================================")
 
-    print("[1/6] Contrarian...")
+    # --- Seat 1: The Contrarian ---
+    print("\n[1/6] The Contrarian...")
     text1 = _chat(
-        "You are The Contrarian. Identify every risk, flaw, and reason this will fail. "
-        "Be direct. Maximum 2 sentences.",
+        "You are The Contrarian. Highlight every critical risk, flaw, and reason "
+        "this plan will fail. Be direct and ruthless. Maximum 2 sentences.",
         f"Identify vulnerabilities: {user_idea}"
     )
     print("  done.")
 
+    # --- Seat 2: First Principles Thinker ---
     print("[2/6] First Principles Thinker...")
     text2 = _chat(
-        "You are the First Principles Thinker. Strip all assumptions. "
+        "You are the First Principles Thinker. Strip all assumptions and analogies. "
         "Rebuild the core logic from raw axioms. Maximum 2 sentences.",
-        f"Deconstruct and rebuild: {user_idea}"
+        f"Deconstruct and rebuild from first principles: {user_idea}"
     )
     print("  done.")
 
-    print("[3/6] Expansionist...")
+    # --- Seat 3: The Expansionist ---
+    print("[3/6] The Expansionist...")
     text3 = _chat(
-        "You are The Expansionist. Uncover hidden upside, scale plays, "
+        "You are The Expansionist. Uncover the biggest hidden upside, scalability plays, "
         "and opportunities being missed. Maximum 2 sentences.",
         f"Maximize scale and upside: {user_idea}"
     )
     print("  done.")
 
-    print("[4/6] Outsider...")
+    # --- Seat 4: The Outsider ---
+    print("[4/6] The Outsider...")
     text4 = _chat(
-        "You are The Outsider. Evaluate with complete objectivity and zero jargon. "
-        "Maximum 2 sentences.",
+        "You are The Outsider. Evaluate this with complete objectivity, "
+        "zero jargon, and no emotional attachment. Maximum 2 sentences.",
         f"Evaluate neutrally: {user_idea}"
     )
     print("  done.")
 
-    print("[5/6] Executor...")
+    # --- Seat 5: The Executor ---
+    print("[5/6] The Executor...")
     text5 = _chat(
-        "You are The Executor. Focus only on what to do next. "
-        "Give one concrete, actionable next step. Maximum 2 sentences.",
+        "You are The Executor. Focus purely on what to do next. "
+        "Give the single most concrete, actionable next step. Maximum 2 sentences.",
         f"What is the immediate next action? {user_idea}"
     )
     print("  done.")
 
-    print("[6/6] Chairman...")
+    # --- Seat 6: The Chairman ---
+    print("[6/6] The Chairman (synthesis)...")
     chairman_context = (
         f"Objective: {user_idea}\n\n"
         f"Contrarian: {text1}\n\n"
@@ -97,14 +103,14 @@ def run_council_debate(user_idea: str) -> dict:
     print("  done.")
 
     print("\n==================================================")
-    print("  Debate complete.")
+    print(" DEBATE COMPLETE. RETURNING VERDICT PACKET.        ")
     print("==================================================\n")
 
     return {
-        "contrarian":       text1,
+        "contrarian":      text1,
         "first_principles": text2,
-        "expansionist":     text3,
-        "outsider":         text4,
-        "executor":         text5,
-        "chairman":         text6,
+        "expansionist":    text3,
+        "outsider":        text4,
+        "executor":        text5,
+        "chairman":        text6,
     }
