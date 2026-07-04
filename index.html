@@ -3,86 +3,431 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice Assistant Console</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>Voice Assistant</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-        body, html { width: 100%; height: 100%; overflow: hidden; background-color: #0E0F13; font-family: 'Inter', sans-serif; color: #ffffff; }
+        body, html { 
+            width: 100%; 
+            height: 100%; 
+            overflow: hidden; 
+            background-color: #0E0F13; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            color: #ffffff; 
+        }
+
         #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: auto; }
-        .glass-panel { background: rgba(14, 15, 19, 0.15); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, 0.06); z-index: 2; position: absolute; transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1); }
-        header { position: absolute; top: 0; left: 0; width: 100%; height: 56px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; z-index: 2; }
+
+        .glass-panel {
+            background: rgba(14, 15, 19, 0.15);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            z-index: 2;
+            position: absolute;
+            transition: all 400ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        header {
+            position: absolute; top: 0; left: 0; width: 100%; height: 56px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px; z-index: 2;
+        }
         .wordmark { font-weight: 600; font-size: 16px; letter-spacing: 0.05em; display: flex; align-items: center; }
-        .wordmark span { color: #2DD4A8; margin-left: 2px; font-size: 20px; }
+        .wordmark span { color: var(--accent-glow, #2DD4A8); margin-left: 2px; font-size: 20px; transition: color 0.4s; }
         .header-right { display: flex; align-items: center; gap: 20px; }
         .ghost-btn { background: none; border: none; color: rgba(255,255,255,0.6); font-size: 11px; font-family: monospace; letter-spacing: 0.05em; cursor: pointer; transition: color 0.2s; }
-        .ghost-btn:hover { color: #2DD4A8; }
+        .ghost-btn:hover { color: var(--accent-glow, #2DD4A8); }
+        
         .status-container { display: flex; align-items: center; gap: 8px; font-size: 11px; font-family: monospace; letter-spacing: 0.05em; color: rgba(255,255,255,0.5); }
         .status-dot { width: 10px; height: 10px; border-radius: 50%; background-color: #8A8D91; transition: background-color 0.3s; }
-        .status-dot.listening { background-color: #2DD4A8; box-shadow: 0 0 10px #2DD4A8; animation: pulseGlow 1.4s infinite; }
+        .status-dot.listening { background-color: var(--accent-glow, #2DD4A8); box-shadow: 0 0 10px var(--accent-glow, #2DD4A8); animation: pulseGlow 1.4s infinite; }
         .status-dot.processing { background-color: #3b82f6; box-shadow: 0 0 10px #3b82f6; animation: pulseGlow 1.4s infinite; }
-        #activity-panel { top: 70px; right: 10px; width: 260px; height: calc(100% - 210px); border-radius: 8px; padding: 15px; display: flex; flex-direction: column; gap: 20px; }
+        .status-dot.muted { background-color: #ff3333; box-shadow: 0 0 10px #ff3333; }
+
+        #activity-panel {
+            top: 70px; right: 10px; width: 260px; height: calc(100% - 210px);
+            border-radius: 8px; padding: 15px; display: flex; flex-direction: column; gap: 20px;
+        }
         #activity-panel.collapsed { width: 36px; padding: 15px 5px; overflow: hidden; }
-        .panel-toggle { position: absolute; top: 10px; left: 10px; cursor: pointer; color: #2DD4A8; font-size: 12px; font-weight: bold; }
+        .panel-toggle { position: absolute; top: 10px; left: 10px; cursor: pointer; color: var(--accent-glow, #2DD4A8); font-size: 12px; font-weight: bold; transition: color 0.4s; }
         .panel-content { display: flex; flex-direction: column; gap: 20px; width: 230px; margin-top: 20px; }
         .section-header { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.4); letter-spacing: 0.08em; display: flex; justify-content: space-between; }
-        .panel-entry { font-size: 12px; color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.03); padding: 8px; border-radius: 4px; border-left: 2px solid #2DD4A8; animation: slideIn 300ms cubic-bezier(0.16, 1, 0.3, 1); }
-        #response-stack { position: absolute; top: 120px; left: 30px; z-index: 2; display: flex; flex-direction: column; gap: 15px; pointer-events: none; }
-        .response-card { width: 280px; background: rgba(22, 23, 29, 0.75); border-radius: 6px; border-top: 2px solid #2DD4A8; padding: 15px; font-size: 13px; line-height: 1.5; box-shadow: 0 10px 30px rgba(0,0,0,0.5); pointer-events: auto; transform: rotateX(8deg); animation: floatAnim 4s ease-in-out infinite, entryRotate 400ms cubic-bezier(0.16, 1, 0.3, 1); }
-        .response-card .speaker-tag { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; color: #2DD4A8; }
-        #control-dock { position: absolute; bottom: 0; left: 0; width: 100%; height: 130px; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; gap: 10px; }
+        .panel-entry { font-size: 11px; font-family: monospace; color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.03); padding: 8px; border-radius: 4px; border-left: 2px solid var(--accent-glow, #2DD4A8); transform: translateX(0); animation: slideIn 300ms cubic-bezier(0.16, 1, 0.3, 1); transition: all 0.4s; }
+
+        #response-stack { 
+            position: absolute; 
+            top: 120px; 
+            left: 30px; 
+            z-index: 2; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            max-height: calc(100vh - 280px);
+            overflow-y: auto;
+            padding-right: 8px;
+            pointer-events: auto; 
+        }
+        #response-stack::-webkit-scrollbar { width: 4px; }
+        #response-stack::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 4px; }
+        #response-stack::-webkit-scrollbar-thumb:hover { background: var(--accent-glow, #2DD4A8); }
+
+        .response-card {
+            width: 280px; background: rgba(22, 23, 29, 0.75); border-radius: 6px;
+            border-top: 2px solid var(--accent-card-border, #2DD4A8); padding: 15px; font-size: 13px; line-height: 1.5;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); flex-shrink: 0;
+            transform: rotateX(8deg); animation: floatAnim 4s ease-in-out infinite, entryRotate 400ms cubic-bezier(0.16, 1, 0.3, 1);
+            transition: border-top-color 0.4s;
+        }
+        .response-card .speaker-tag { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; color: var(--accent-card-border, #2DD4A8); transition: color 0.4s; }
+        .response-card pre { font-family: monospace; font-size: 11px; background: rgba(0,0,0,0.3); padding: 6px; border-radius: 4px; overflow-x: auto; margin-top: 6px; user-select: text; white-space: pre-wrap; }
+
+        #control-dock {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 130px;
+            z-index: 2; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; pointer-events: none; gap: 10px;
+        }
         .interactive-elements { display: flex; align-items: center; gap: 20px; pointer-events: auto; }
-        .chat-input-wrapper { background: rgba(14, 15, 19, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 5px 15px; display: flex; align-items: center; width: 320px; }
-        .chat-input-wrapper input { background: none; border: none; outline: none; color: #ffffff; font-family: 'Inter', sans-serif; font-size: 13px; width: 100%; }
+        
+        .chat-input-wrapper {
+            background: rgba(14, 15, 19, 0.4); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 20px;
+            padding: 5px 15px; display: flex; align-items: center; width: 320px;
+            transition: border-color 0.4s;
+        }
+        .chat-input-wrapper:focus-within { border-color: var(--accent-glow, #2DD4A8); }
+        .chat-input-wrapper input { background: none; border: none; outline: none; color: #ffffff; font-family: inherit; font-size: 13px; width: 100%; }
         .chat-input-wrapper input::placeholder { color: rgba(255,255,255,0.3); }
+
         .mic-container { position: relative; width: 64px; height: 64px; }
-        .mic-button { width: 64px; height: 64px; border-radius: 50%; background: #16171D; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .mic-button {
+            width: 64px; height: 64px; border-radius: 50%; background: #16171D;
+            border: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center;
+            justify-content: center; cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
         .mic-button svg { width: 22px; height: 22px; fill: #ffffff; transition: fill 0.3s; }
-        .mic-button.active { border-color: #2DD4A8; box-shadow: 0 0 24px rgba(45, 212, 168, 0.5); }
-        .mic-button.active svg { fill: #2DD4A8; }
-        .pulse-ring { position: absolute; top: 0; left: 0; width: 64px; height: 64px; border-radius: 50%; border: 2px solid #2DD4A8; pointer-events: none; opacity: 0; }
+        
+        .mic-button.active {
+            border-color: var(--accent-glow, #2DD4A8);
+            box-shadow: 0 0 24px rgba(45, 212, 168, 0.5);
+        }
+        .mic-button.active svg { fill: var(--accent-glow, #2DD4A8); }
+        .pulse-ring {
+            position: absolute; top: 0; left: 0; width: 64px; height: 64px;
+            border-radius: 50%; border: 2px solid var(--accent-glow, #2DD4A8); pointer-events: none;
+            opacity: 0; transform: scale(1); border-color: var(--accent-glow, #2DD4A8);
+        }
         .mic-button.active + .pulse-ring { animation: ringSpread 1.4s infinite cubic-bezier(0.16, 1, 0.3, 1); }
+
         .hint-text { font-size: 11px; font-family: monospace; text-transform: uppercase; color: rgba(255,255,255,0.4); letter-spacing: 0.08em; }
+
         @keyframes ringSpread { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.3); opacity: 0; } }
         @keyframes floatAnim { 0%, 100% { transform: translateY(0px) rotateX(8deg); } 50% { transform: translateY(-6px) rotateX(8deg); } }
         @keyframes entryRotate { 0% { opacity: 0; transform: scale(0.9) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
         @keyframes slideIn { 0% { opacity: 0; transform: translateX(20px); } 100% { opacity: 1; transform: translateX(0); } }
         @keyframes pulseGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+        /*  COUNCIL ORB DISPLAY  */
+        #council-overlay {
+            position: fixed; inset: 0; z-index: 100;
+            background: rgba(8, 9, 14, 0.92);
+            backdrop-filter: blur(18px);
+            display: none; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 20px;
+        }
+        #council-overlay.active { display: flex; }
+
+        #council-title {
+            font-size: 11px; font-family: monospace; letter-spacing: 0.18em;
+            color: rgba(255,255,255,0.35); text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        #council-arena {
+            position: relative;
+            width: 520px; height: 520px;
+        }
+
+        /* The five outer agent orbs */
+        .agent-orb {
+            position: absolute;
+            width: 88px; height: 88px;
+            border-radius: 50%;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            cursor: default;
+            transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
+        }
+        .agent-orb-inner {
+            width: 88px; height: 88px; border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, var(--orb-light), var(--orb-dark));
+            border: 2px solid var(--orb-border);
+            box-shadow: 0 0 18px 2px var(--orb-glow);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            transition: box-shadow 0.3s, transform 0.3s;
+            position: relative; overflow: hidden;
+        }
+        .agent-orb-inner::after {
+            content: '';
+            position: absolute; top: 12%; left: 18%;
+            width: 28%; height: 18%;
+            background: rgba(255,255,255,0.18);
+            border-radius: 50%;
+            filter: blur(3px);
+        }
+        .agent-orb-label {
+            font-size: 9px; font-family: monospace;
+            letter-spacing: 0.08em; text-transform: uppercase;
+            color: rgba(255,255,255,0.5);
+            margin-top: 8px; text-align: center;
+            max-width: 90px; line-height: 1.3;
+        }
+        .agent-orb-icon {
+            font-size: 22px; line-height: 1;
+            filter: drop-shadow(0 0 6px rgba(255,255,255,0.4));
+        }
+
+        /* Active state — orb glows and pulses when speaking */
+        .agent-orb.active .agent-orb-inner {
+            box-shadow: 0 0 40px 8px var(--orb-glow), 0 0 80px 16px var(--orb-glow-far);
+            transform: scale(1.12);
+            animation: orbPulse 1.2s ease-in-out infinite;
+        }
+        .agent-orb.active .agent-orb-label {
+            color: rgba(255,255,255,0.9);
+        }
+
+        /* Done state — orb dims down */
+        .agent-orb.done .agent-orb-inner {
+            opacity: 0.45;
+            box-shadow: 0 0 6px 1px var(--orb-glow);
+        }
+
+        /* Chairman orb — center, larger */
+        #chairman-orb {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 110px; height: 110px;
+            border-radius: 50%;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+        #chairman-orb-inner {
+            width: 110px; height: 110px; border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #e8d5a3, #8B6914);
+            border: 2px solid #d4a847;
+            box-shadow: 0 0 22px 4px rgba(212,168,71,0.4);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            transition: box-shadow 0.4s, transform 0.4s;
+            position: relative; overflow: hidden;
+        }
+        #chairman-orb-inner::after {
+            content: '';
+            position: absolute; top: 12%; left: 18%;
+            width: 28%; height: 18%;
+            background: rgba(255,255,255,0.22);
+            border-radius: 50%;
+            filter: blur(4px);
+        }
+        #chairman-orb.active #chairman-orb-inner {
+            box-shadow: 0 0 60px 16px rgba(212,168,71,0.7), 0 0 120px 32px rgba(212,168,71,0.25);
+            transform: scale(1.1);
+            animation: orbPulse 1.4s ease-in-out infinite;
+        }
+        #chairman-orb-label {
+            font-size: 9px; font-family: monospace;
+            letter-spacing: 0.1em; text-transform: uppercase;
+            color: rgba(255,255,255,0.5); margin-top: 8px;
+            text-align: center;
+        }
+        #chairman-orb-icon { font-size: 26px; }
+
+        /* Connecting lines between chairman and agents */
+        #council-svg {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            pointer-events: none; overflow: visible;
+        }
+        .council-line {
+            stroke: rgba(255,255,255,0.06);
+            stroke-width: 1;
+            stroke-dasharray: 4 6;
+            transition: stroke 0.4s, stroke-opacity 0.4s;
+        }
+        .council-line.active {
+            stroke: var(--line-color);
+            stroke-opacity: 0.5;
+            animation: dashFlow 1.5s linear infinite;
+        }
+
+        /* Verdict card at the bottom of the overlay */
+        #council-verdict {
+            max-width: 560px; text-align: center;
+            font-size: 13px; line-height: 1.7;
+            color: rgba(255,255,255,0.75);
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-top: 2px solid #d4a847;
+            border-radius: 8px; padding: 16px 22px;
+            opacity: 0; transition: opacity 0.6s;
+            min-height: 56px;
+        }
+        #council-verdict.visible { opacity: 1; }
+        #council-verdict-label {
+            font-size: 9px; font-family: monospace;
+            letter-spacing: 0.12em; color: #d4a847;
+            text-transform: uppercase; margin-bottom: 6px;
+        }
+
+        #council-close-btn {
+            font-size: 10px; font-family: monospace;
+            letter-spacing: 0.1em; color: rgba(255,255,255,0.3);
+            background: none; border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px; padding: 5px 16px; cursor: pointer;
+            transition: color 0.2s, border-color 0.2s;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.4s;
+        }
+        #council-close-btn.visible {
+            opacity: 1; pointer-events: auto;
+        }
+        #council-close-btn:hover { color: #fff; border-color: rgba(255,255,255,0.4); }
+
+        @keyframes orbPulse {
+            0%, 100% { filter: brightness(1); }
+            50%       { filter: brightness(1.25); }
+        }
+        @keyframes dashFlow {
+            0%   { stroke-dashoffset: 0; }
+            100% { stroke-dashoffset: -40; }
+        }
     </style>
 </head>
 <body>
+
     <div id="canvas-container"></div>
+
+    <!-- COUNCIL ORB OVERLAY -->
+    <div id="council-overlay">
+        <div id="council-title">Council Chamber — Parallel Deliberation Active</div>
+
+        <div id="council-arena">
+            <!-- SVG lines from Chairman to each agent -->
+            <svg id="council-svg" viewBox="0 0 520 520">
+                <line id="line-contrarian"      class="council-line" style="--line-color:#FF453A"/>
+                <line id="line-first_principles" class="council-line" style="--line-color:#FF9500"/>
+                <line id="line-expansionist"    class="council-line" style="--line-color:#34C759"/>
+                <line id="line-outsider"        class="council-line" style="--line-color:#5AC8FA"/>
+                <line id="line-executor"        class="council-line" style="--line-color:#AF52DE"/>
+            </svg>
+
+            <!-- The five agent orbs — positioned in a pentagon around Chairman -->
+            <div class="agent-orb" id="orb-contrarian"
+                style="--orb-light:#FF6B64;--orb-dark:#8B1A15;--orb-border:#FF453A;--orb-glow:rgba(255,69,58,0.5);--orb-glow-far:rgba(255,69,58,0.15);
+                top:14px; left:50%; transform:translateX(-50%);">
+                <div class="agent-orb-inner">
+                    <span class="agent-orb-icon">X</span>
+                </div>
+                <div class="agent-orb-label">Contrarian</div>
+            </div>
+
+            <div class="agent-orb" id="orb-first_principles"
+                style="--orb-light:#FFB340;--orb-dark:#7A4200;--orb-border:#FF9500;--orb-glow:rgba(255,149,0,0.5);--orb-glow-far:rgba(255,149,0,0.15);
+                top:148px; right:18px;">
+                <div class="agent-orb-inner">
+                    <span class="agent-orb-icon">∅</span>
+                </div>
+                <div class="agent-orb-label">First Principles</div>
+            </div>
+
+            <div class="agent-orb" id="orb-expansionist"
+                style="--orb-light:#6EE89A;--orb-dark:#0C5C2A;--orb-border:#34C759;--orb-glow:rgba(52,199,89,0.5);--orb-glow-far:rgba(52,199,89,0.15);
+                bottom:78px; right:68px;">
+                <div class="agent-orb-inner">
+                    <span class="agent-orb-icon">↑</span>
+                </div>
+                <div class="agent-orb-label">Expansionist</div>
+            </div>
+
+            <div class="agent-orb" id="orb-outsider"
+                style="--orb-light:#7FD9FA;--orb-dark:#0A4A6E;--orb-border:#5AC8FA;--orb-glow:rgba(90,200,250,0.5);--orb-glow-far:rgba(90,200,250,0.15);
+                bottom:78px; left:68px;">
+                <div class="agent-orb-inner">
+                    <span class="agent-orb-icon">O</span>
+                </div>
+                <div class="agent-orb-label">Outsider</div>
+            </div>
+
+            <div class="agent-orb" id="orb-executor"
+                style="--orb-light:#CC80FF;--orb-dark:#4A1580;--orb-border:#AF52DE;--orb-glow:rgba(175,82,222,0.5);--orb-glow-far:rgba(175,82,222,0.15);
+                top:148px; left:18px;">
+                <div class="agent-orb-inner">
+                    <span class="agent-orb-icon">→</span>
+                </div>
+                <div class="agent-orb-label">Executor</div>
+            </div>
+
+            <!-- Chairman — center -->
+            <div id="chairman-orb">
+                <div id="chairman-orb-inner">
+                    <span id="chairman-orb-icon"></span>
+                </div>
+                <div id="chairman-orb-label">Chairman</div>
+            </div>
+        </div>
+
+        <!-- Chairman's final verdict -->
+        <div id="council-verdict">
+            <div id="council-verdict-label">Awaiting Deliberation</div>
+            <div id="council-verdict-text"></div>
+        </div>
+
+        <button id="council-close-btn" onclick="closeCouncilOverlay()">DISMISS COUNCIL</button>
+    </div>
 
     <header class="glass-panel">
         <div class="wordmark">ASSISTANT<span>.</span></div>
         <div class="header-right">
-            <button class="ghost-btn" onclick="triggerMapModule()">MAP</button>
-            <button class="ghost-btn" onclick="triggerAlertsModule()">ALERTS</button>
+            <button class="ghost-btn" onclick="triggerMapModule()" title="Show system routing and agent layout">HOW ASSISTANT WORKS</button>
+            <button class="ghost-btn" onclick="triggerAlertsModule()" title="Show server and connection status">SYSTEM HEALTH</button>
             <div class="status-container">
                 <span id="system-status-text">ONLINE</span>
                 <div id="global-status-dot" class="status-dot"></div>
             </div>
-        </div>
     </header>
 
     <div id="response-stack">
         <div class="response-card" id="welcome-card">
-            <div class="speaker-tag">System</div>
-            Console online. Ambient listening active.
+            <div class="speaker-tag">Ace</div>
+            Online and ready, User. Say "Hey Jarvis" to start talking, or type below.
         </div>
     </div>
 
     <div id="activity-panel" class="glass-panel">
-        <div class="panel-toggle" onclick="togglePanel()">+</div>
+        <div class="panel-toggle" onclick="togglePanel()"></div>
         <div class="panel-content" id="panel-content-area">
             <div>
-                <div class="section-header">SESSION <span>0</span></div>
+                <div class="section-header">SESSION <span>#</span></div>
+                <div class="panel-entry" id="inbox-counter" title="How many messages sent this session">0 messages this session</div>
             </div>
             <div>
-                <div class="section-header">STATUS <span id="scout-status">READY</span></div>
-                <div class="panel-entry" id="scout-entry">Neural path verified.</div>
+                <div class="section-header">THINKING WITH <span id="scout-status">READY</span></div>
+                <div class="panel-entry" id="scout-entry" title="Which AI model or agent Ace is using right now">Waiting for your first message.</div>
             </div>
             <div>
-                <div class="section-header">CONTEXT <span>ACTIVE</span></div>
+                <div class="section-header">MEMORY <span>LIVE</span></div>
+                <div class="panel-entry" id="flux-status" title="How much of Ace's short-term memory is in use — resets each session">0 of 20 messages remembered</div>
+            </div>
+            <div>
+                <div class="section-header">LAST ROUTE <span>-</span></div>
+                <div class="panel-entry" id="last-route-entry" title="How Ace decided to handle your last message">No requests yet.</div>
+            </div>
+            <div>
+                <div class="section-header">MODE <span id="mode-indicator">NORMAL</span></div>
+                <div class="panel-entry" id="mode-entry" title="Ace's current operating mode">All systems active.</div>
             </div>
         </div>
     </div>
@@ -90,8 +435,9 @@
     <div id="control-dock">
         <div class="interactive-elements">
             <div class="chat-input-wrapper">
-                <input type="text" id="chat-entry" placeholder="Type a command..." onkeypress="handleTextSubmit(event)">
+                <input type="text" id="chat-entry" placeholder="Send manual system execution command..." onkeypress="handleTextSubmit(event)">
             </div>
+            
             <div class="mic-container">
                 <div class="mic-button" id="master-mic-btn" onclick="toggleVoiceCapture()">
                     <svg id="mic-icon-svg" viewBox="0 0 24 24">
@@ -101,224 +447,627 @@
                 <div class="pulse-ring"></div>
             </div>
         </div>
-        <div class="hint-text">SAY WAKE WORD OR PRESS ENTER TO SPEAK</div>
+        <div class="hint-text">SAY "HEY ASSISTANT" TO START TALKING — "TURN OFF VOICE MODE" TO STOP</div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="/three.min.js"></script>
     <script>
-        // Config — must match config.py
-        const ASSISTANT_NAME = "Jarvis";
-        const WAKE_WORDS     = ["hi jarvis", "hey jarvis", "wake up jarvis", "ok jarvis"];
+
+        // ── Config — must match config.py ───────────────────────────
+        const ASSISTANT_NAME = "Jarvis";   // Change to match config.py
+        const USER_NAME      = "User";     // Change to match config.py
+        const WAKE_WORDS     = ["hey jarvis", "hi jarvis", "wake up jarvis", "ok jarvis"];
+        // ─────────────────────────────────────────────────────────────
 
         let scene, camera, renderer, starParticles, orbMesh, orbGlow;
         let recognition;
-        let isListeningMode      = false;
-        let isServerProcessing   = false;
+        
+        let isListeningMode = false;
+        let shouldRunSpeechEngine = true;
+        let isServerProcessing = false;
+        let isSpeaking = false;
+
+        // Stop Ace audio only when the tab is closed — not when switching to another tab.
+        // beforeunload fires on close/navigate-away; pagehide is the mobile equivalent.
+        window.addEventListener('beforeunload', () => {
+            fetch('/api/stop_audio', { method: 'POST' }).catch(() => {});
+        });
+        window.addEventListener('pagehide', () => {
+            fetch('/api/stop_audio', { method: 'POST' }).catch(() => {});
+        });
+
+
         let audioContext, audioAnalyser, audioDataArray;
         let liveMicrophoneAmplitude = 0.0;
 
+        function updateSystemTheme(hexColor) {
+            document.documentElement.style.setProperty('--accent-glow', hexColor);
+            document.documentElement.style.setProperty('--accent-card-border', hexColor);
+            if (orbMesh && orbMesh.material) orbMesh.material.color.set(hexColor);
+            if (orbGlow && orbGlow.material) orbGlow.material.color.set(hexColor);
+        }
+
+        function autoCorrectSpeechAndPunctuate(text) {
+            let corrected = text.trim();
+            if (!corrected) return "";
+
+            // Common mishearings map
+            const translationMap = {
+                "quan": "Qwen", "quan 2.5": "Qwen 2.5", "queen 2.5": "Qwen 2.5",
+                "quinn": "Qwen", "gwen": "Qwen", "lama": "Llama",
+                "llama 3.2": "Llama 3.2"
+            };
+            for (const [misheard, accurate] of Object.entries(translationMap)) {
+                const regex = new RegExp(`\\b${misheard}\\b`, 'gi');
+                corrected = corrected.replace(regex, accurate);
+            }
+            corrected = corrected.replace(/\bllama\b/gi, "Llama").replace(/\bqwen\b/gi, "Qwen");
+
+            // Only add punctuation if none exists
+            if (!/[.!?]$/.test(corrected)) {
+                const words = corrected.toLowerCase().split(/\s+/);
+                const firstWord = words[0];
+                const secondWord = words[1] || "";
+
+                // Strong question starters
+                const questionStarters = ["who", "what", "where", "when", "why", "how",
+                    "can", "could", "would", "should", "is", "are", "was", "were",
+                    "do", "does", "did", "will", "has", "have", "had", "may", "might",
+                    "am", "isn't", "aren't", "doesn't", "don't", "didn't", "won't"];
+
+                // Phrases that signal a question mid-sentence
+                const questionPhrases = ["can you", "could you", "would you", "should i",
+                    "do you", "does ace", "is there", "are there", "is it", "is this",
+                    "what is", "what are", "what's", "how do", "how does", "how can",
+                    "how much", "how many", "why is", "why does", "why are",
+                    "tell me", "explain", "show me"];
+
+                const lowerCorrected = corrected.toLowerCase();
+                const isQuestion = questionStarters.includes(firstWord) ||
+                    questionPhrases.some(p => lowerCorrected.startsWith(p)) ||
+                    lowerCorrected.includes("?") ||
+                    (firstWord === "ace" && questionStarters.includes(secondWord));
+
+                // Exclamation detection
+                const exclamationWords = ["stop", "yes", "no", "cancel", "abort",
+                    "perfect", "great", "go", "do it", "confirmed", "approved"];
+                const isExclamation = exclamationWords.includes(lowerCorrected.trim());
+
+                if (isQuestion) corrected += "?";
+                else if (isExclamation) corrected += "!";
+                else corrected += ".";
+            }
+            return corrected;
+        }
+
         function initSpaceScene() {
             const container = document.getElementById('canvas-container');
-            scene    = new THREE.Scene();
-            camera   = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.z = 5;
+
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
             container.appendChild(renderer.domElement);
 
-            const starGeometry  = new THREE.BufferGeometry();
-            const starCount     = 1200;
+            const starGeometry = new THREE.BufferGeometry();
+            const starCount = 1200;
             const starPositions = new Float32Array(starCount * 3);
-            for (let i = 0; i < starCount * 3; i++) starPositions[i] = (Math.random() - 0.5) * 15;
+            for(let i=0; i < starCount * 3; i++) starPositions[i] = (Math.random() - 0.5) * 15;
             starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
             starParticles = new THREE.Points(starGeometry, new THREE.PointsMaterial({ color: 0xffffff, size: 0.02, transparent: true, opacity: 0.8 }));
             scene.add(starParticles);
 
             orbMesh = new THREE.Mesh(new THREE.SphereGeometry(0.6, 64, 64), new THREE.MeshBasicMaterial({ color: 0x2DD4A8 }));
             scene.add(orbMesh);
+
             orbGlow = new THREE.Mesh(new THREE.SphereGeometry(0.8, 32, 32), new THREE.MeshBasicMaterial({ color: 0x2DD4A8, transparent: true, opacity: 0.25, side: THREE.BackSide }));
             scene.add(orbGlow);
 
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && document.activeElement !== document.getElementById('chat-entry')) {
-                    e.preventDefault();
-                    toggleVoiceCapture();
-                }
-            });
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('keydown', handleGlobalKeydown);
 
-            initSpeechEngine();
-            initAudioAnalyzer();
+            initUnifiedSpeechEngine();
+            initHardwareAudioAnalyzer();
             animateLoop();
         }
 
-        function initAudioAnalyzer() {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-            .then(stream => {
-                const AC      = window.AudioContext || window.webkitAudioContext;
-                audioContext  = new AC();
-                const source  = audioContext.createMediaStreamSource(stream);
+        function initHardwareAudioAnalyzer() {
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                audioContext = new AudioContextClass();
+                const sourceNode = audioContext.createMediaStreamSource(stream);
                 audioAnalyser = audioContext.createAnalyser();
                 audioAnalyser.fftSize = 256;
                 audioDataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
-                source.connect(audioAnalyser);
-            })
-            .catch(() => {});
+                sourceNode.connect(audioAnalyser);
+            }).catch(() => { console.log(" Acoustic analyzer standby."); });
         }
 
         function animateLoop() {
             requestAnimationFrame(animateLoop);
-            const time          = Date.now() * 0.001;
+            const time = Date.now() * 0.001;
             let breathingFactor = Math.sin(time * 1.5) * 0.04;
-
-            if (audioAnalyser && audioDataArray) {
+            
+            if (shouldRunSpeechEngine && audioAnalyser && audioDataArray) {
                 audioAnalyser.getByteFrequencyData(audioDataArray);
-                let sum = 0;
-                for (let i = 0; i < audioDataArray.length; i++) sum += audioDataArray[i];
-                let target = (sum / audioDataArray.length) / 128.0;
-                liveMicrophoneAmplitude += (target - liveMicrophoneAmplitude) * 0.2;
+                let totalFrequencySum = 0;
+                for (let i = 0; i < audioDataArray.length; i++) totalFrequencySum += audioDataArray[i];
+                liveMicrophoneAmplitude += ((totalFrequencySum / audioDataArray.length) / 128.0 - liveMicrophoneAmplitude) * 0.2;
+            } else {
+                liveMicrophoneAmplitude += (0.0 - liveMicrophoneAmplitude) * 0.1;
             }
 
-            const s = 1.0 + breathingFactor + (liveMicrophoneAmplitude * 1.2);
-            if (orbMesh) orbMesh.scale.set(s, s, s);
-            if (orbGlow) orbGlow.scale.set(s * 1.25, s * 1.25, s * 1.25);
+            let finalScalingFactor = 1.0 + breathingFactor + (liveMicrophoneAmplitude * 1.2);
+            if (orbMesh) orbMesh.scale.set(finalScalingFactor, finalScalingFactor, finalScalingFactor);
+            if (orbGlow) orbGlow.scale.set(finalScalingFactor * 1.25, finalScalingFactor * 1.25, finalScalingFactor * 1.25);
             if (starParticles) starParticles.rotation.y = time * 0.02;
             renderer.render(scene, camera);
         }
 
-        function initSpeechEngine() {
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function initUnifiedSpeechEngine() {
             if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-                appendResponseCard("System", "Speech recognition not supported in this browser.");
+                appendResponseCard("Hardware Alert", "Speech recognition structures not supported.");
                 return;
             }
-            const SR    = window.SpeechRecognition || window.webkitSpeechRecognition;
-            recognition = new SR();
-            recognition.continuous     = true;
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            
+            recognition.continuous = false; 
             recognition.interimResults = false;
-            recognition.lang           = 'en-US';
+            recognition.lang = 'en-US';
 
             recognition.onresult = (event) => {
-                if (isServerProcessing) return;
-                const transcript      = event.results[event.resultIndex][0].transcript.trim();
+                if (!shouldRunSpeechEngine || isServerProcessing) return; 
+                
+                const lastIndex = event.resultIndex;
+                const rawTranscript = event.results[lastIndex][0].transcript.trim();
+                const transcript = autoCorrectSpeechAndPunctuate(rawTranscript);
                 const transcriptLower = transcript.toLowerCase();
+                
+                console.log(" [Voice Core] Intercepted Raw Audio Token:", transcript);
 
                 if (isListeningMode) {
+                    // Voice-off commands
+                    if (transcriptLower.includes("microphone off") ||
+                        transcriptLower.includes("text mode only") ||
+                        transcriptLower.includes("turn microphone off") ||
+                        transcriptLower.includes("turn off voice mode") ||
+                        transcriptLower.includes("voice mode off")) {
+                        switchToAmbientMode();
+                        postCommandToBackend("turn off voice mode", 'voice');
+                        return;
+                    }
                     postCommandToBackend(transcript, 'voice');
-                    switchToAmbientMode();
-                } else {
-                    for (let wake of WAKE_WORDS) {
-                        if (transcriptLower.includes(wake)) {
-                            const trailing = transcript.substring(transcriptLower.indexOf(wake) + wake.length).trim();
-                            if (trailing.length > 0) {
-                                postCommandToBackend(trailing, 'voice');
-                            } else {
-                                switchToActiveListeningMode();
-                            }
+                }
+                else {
+                    // All wake phrases that activate voice mode
+                    const functionalTriggers = [
+                        "hey jarvis", "hi ace", "wake up ace", "ok ace", "okay ace",
+                        "ace wake up", "ace are you there", "ace i need you",
+                        "activate voice mode", "turn on microphone", "turn microphone on",
+                        "voice mode on", "voice mode", "start listening",
+                        "ace listen", "listen ace"
+                    ];
+                    let targetTriggerMatch = null;
+                    for (let trigger of functionalTriggers) {
+                        if (transcriptLower.includes(trigger)) {
+                            targetTriggerMatch = trigger;
                             break;
+                        }
+                    }
+
+                    if (targetTriggerMatch) {
+                        console.log(" [Voice Core] Wake verification matching anchor:", targetTriggerMatch);
+                        switchToActiveListeningMode();
+                        let triggerPosition = transcriptLower.indexOf(targetTriggerMatch) + targetTriggerMatch.length;
+                        let isolatedTrailingCommand = transcript.substring(triggerPosition).trim();
+                        
+                        if (isolatedTrailingCommand.length > 0) {
+                            postCommandToBackend(autoCorrectSpeechAndPunctuate(isolatedTrailingCommand), 'voice');
+                        } else {
+                            appendResponseCard(ASSISTANT_NAME, "Listening. Go ahead, User.");
                         }
                     }
                 }
             };
 
-            recognition.onerror = () => {};
-            recognition.onend   = () => { if (!isServerProcessing) { try { recognition.start(); } catch(e) {} } };
-            recognition.start();
+            recognition.onerror = (e) => { console.warn(" [Voice Core] Tracking exception state ignored."); };
+            recognition.onend = () => { if (shouldRunSpeechEngine && !isServerProcessing) { try { recognition.start(); } catch(err) {} } };
+
+            if (shouldRunSpeechEngine) { try { recognition.start(); } catch(e) {} }
         }
 
         function switchToActiveListeningMode() {
+            shouldRunSpeechEngine = true;
             isListeningMode = true;
             if (audioContext && audioContext.state === 'suspended') audioContext.resume();
-            document.getElementById('master-mic-btn').classList.add('active');
-            document.getElementById('mic-icon-svg').innerHTML = '<rect x="6" y="6" width="12" height="12"/>';
+            
+            const btn = document.getElementById('master-mic-btn');
+            const svgIcon = document.getElementById('mic-icon-svg');
+            if (btn) btn.classList.add('active');
             updateSystemUIState("listening");
+            if (svgIcon) svgIcon.innerHTML = `<rect x="6" y="6" width="12" height="12"/>`;
         }
 
         function switchToAmbientMode() {
             isListeningMode = false;
-            document.getElementById('master-mic-btn').classList.remove('active');
-            document.getElementById('mic-icon-svg').innerHTML = '<path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>';
+            shouldRunSpeechEngine = true;
+            const btn = document.getElementById('master-mic-btn');
+            const svgIcon = document.getElementById('mic-icon-svg');
+            if (btn) btn.classList.remove('active');
             updateSystemUIState("idle");
+            if (svgIcon) svgIcon.innerHTML = `<path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>`;
         }
 
         function toggleVoiceCapture() {
-            isListeningMode ? switchToAmbientMode() : switchToActiveListeningMode();
+            if (!isListeningMode) switchToActiveListeningMode();
+            else {
+                switchToAmbientMode();
+                postCommandToBackend("turn off voice mode", 'voice');
+            }
+        }
+
+        function handleGlobalKeydown(event) {
+            if (event.key === 'Enter' && document.activeElement !== document.getElementById('chat-entry')) {
+                event.preventDefault();
+                toggleVoiceCapture();
+            }
         }
 
         function handleTextSubmit(event) {
             if (event.key === 'Enter') {
-                const input = document.getElementById('chat-entry');
-                const text  = input.value.trim();
-                if (!text) return;
-                input.value = "";
-                postCommandToBackend(text, 'text');
+                const inputElement = document.getElementById('chat-entry');
+                let commandText = inputElement.value.trim();
+                if (!commandText) return;
+                inputElement.value = "";
+                postCommandToBackend(commandText, isListeningMode ? 'voice' : 'text');
             }
         }
 
-        function postCommandToBackend(text, source) {
+        function postCommandToBackend(payloadText, source) {
             isServerProcessing = true;
             updateSystemUIState("processing");
-            appendResponseCard(source === 'voice' ? "You (Voice)" : "You (Typed)", text);
+            appendResponseCard(source === 'voice' ? "User (Voice)" : "User (Keyboard)", payloadText);
+
+            document.getElementById('scout-status').innerText = "THINKING";
+            document.getElementById('scout-entry').innerText = "Routing transaction package across local array nodes...";
+
+            if (recognition) { try { recognition.stop(); } catch(e) {} }
 
             fetch('/api/command', {
-                method:  'POST',
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({ command: text, source: source })
+                body: JSON.stringify({ command: payloadText, source: source })
             })
             .then(res => res.json())
             .then(data => {
-                isServerProcessing = false;
-                updateSystemUIState("idle");
-                if (typeof data.response === 'object') {
-                    if (data.response.contrarian)     appendResponseCard("The Contrarian",  data.response.contrarian);
-                    if (data.response.synergist)      appendResponseCard("The Synergist",   data.response.synergist);
-                    if (data.response.chairman)       appendResponseCard("The Chairman",     data.response.chairman);
-                } else {
-                    appendResponseCard(ASSISTANT_NAME, data.response);
+                document.getElementById('inbox-counter').innerText = `${data.interaction_count} message${data.interaction_count === 1 ? '' : 's'} this session`;
+                // Parse context slots into readable format
+                const slots = data.context_loaded || "0/20 SLOTS";
+                const slotMatch = slots.match(/(\d+)\/20/);
+                const slotCount = slotMatch ? slotMatch[1] : "0";
+                document.getElementById('flux-status').innerText = `${slotCount} of 20 messages remembered`;
+                // Show which route handled this request
+                const routeMap = {
+                    'council':        'Council — 6 agents debated in parallel',
+                    'browser':        'Web search — browsed live internet',
+                    'desktop':        'Desktop agent — controlled your PC',
+                    'coding':         'Coding agent — software engineering mode',
+                    'system_monitor': 'System agent — scanned your hardware',
+                    'standard':       'Direct chat — fast conversational reply',
+                };
+                document.getElementById('last-route-entry').innerText = routeMap[data.type] || `Direct chat via ${data.model}`;
+
+                // Update mode indicator if server returns one
+                if (data.ace_mode) {
+                    const modeLabels = {
+                        normal:    ['NORMAL',    'All systems active.'],
+                        safe:      ['SAFE MODE', 'Internet and desktop disabled.'],
+                        focus:     ['FOCUS',     'Proactive interruptions blocked.'],
+                        stealth:   ['STEALTH',   'No audio output — text only.'],
+                        ghost:     ['GHOST',     'Nothing being logged this session.'],
+                        lockdown:  ['LOCKDOWN',  'Only responding to User.'],
+                        red_alert: ['RED ALERT', 'Every action requires confirmation.'],
+                        standdown: ['STAND DOWN','Background activity paused.'],
+                    };
+                    const [label, desc] = modeLabels[data.ace_mode] || ['NORMAL', 'All systems active.'];
+                    document.getElementById('mode-indicator').innerText = label;
+                    document.getElementById('mode-entry').innerText = desc;
                 }
-                try { recognition.start(); } catch(e) {}
+
+                if (data.type === "wakeup") isListeningMode = true;
+                if (data.type === "shutdown") isListeningMode = false;
+
+                //  DUAL-LAYER FRONTEND NORMALIZER MATRIX FOR 6-SEAT BOARDROOM
+                if (data.type === 'council' || (data.response && typeof data.response === 'object')) {
+                    let debate = data.response;
+                    
+                    if (typeof debate === 'string') {
+                        try { debate = JSON.parse(debate); } catch (e) {
+                            debate = {
+                                contrarian: "Critical risk analysis active.",
+                                first_principles: "Axiomatic baseline deconstruction active.",
+                                expansionist: "Upside scalability parsing active.",
+                                outsider: "Objective bias filter active.",
+                                executor: "Next practical step mapping active.",
+                                chairman: debate
+                            };
+                        }
+                    }
+
+                    // Strict key normalization path structures to completely eradicate the 'undefined' error
+                    const contrarianText = debate.contrarian || debate.Contrarian || "Vulnerabilities parsed.";
+                    const firstPrinciplesText = debate.first_principles || debate.FirstPrinciples || "First principles mapped.";
+                    const expansionistText = debate.expansionist || debate.Expansionist || "Upside trajectory calculated.";
+                    const outsiderText = debate.outsider || debate.Outsider || "Unbiased overview compiled.";
+                    const executorText = debate.executor || debate.Executor || "Practical roadmap deployed.";
+                    const chairmanText = debate.chairman || debate.Chairman || "Executive directive generated.";
+                    
+                    const ORB_SEQUENCE = [
+                        { key: 'contrarian',       label: 'The Contrarian',      text: contrarianText,      color: '#FF453A', intro: 'Contrarian analysis.' },
+                        { key: 'first_principles', label: 'First Principles',    text: firstPrinciplesText, color: '#FF9500', intro: 'First principles.' },
+                        { key: 'expansionist',     label: 'The Expansionist',    text: expansionistText,    color: '#34C759', intro: 'Expansionist strategy.' },
+                        { key: 'outsider',         label: 'The Outsider',        text: outsiderText,        color: '#5AC8FA', intro: 'Outsider perspective.' },
+                        { key: 'executor',         label: 'The Executor',        text: executorText,        color: '#AF52DE', intro: 'Executor directive.' },
+                    ];
+
+                    function setOrbActive(key) {
+                        ORB_SEQUENCE.forEach(a => {
+                            const el = document.getElementById('orb-' + a.key);
+                            if (el) el.classList.remove('active');
+                        });
+                        const target = document.getElementById('orb-' + key);
+                        if (target) target.classList.add('active');
+                        document.querySelectorAll('.council-line').forEach(l => l.classList.remove('active'));
+                        const line = document.getElementById('line-' + key);
+                        if (line) line.classList.add('active');
+                    }
+
+                    function setOrbDone(key) {
+                        const el = document.getElementById('orb-' + key);
+                        if (el) { el.classList.remove('active'); el.classList.add('done'); }
+                        const line = document.getElementById('line-' + key);
+                        if (line) line.classList.remove('active');
+                    }
+
+                    function setChairmanActive() {
+                        document.getElementById('chairman-orb').classList.add('active');
+                        document.querySelectorAll('.council-line').forEach(l => {
+                            l.classList.add('active');
+                            l.style.stroke = 'rgba(212,168,71,0.5)';
+                        });
+                    }
+
+                    function positionLines() {
+                        const arena   = document.getElementById('council-arena');
+                        const chairEl = document.getElementById('chairman-orb');
+                        const arenaR  = arena.getBoundingClientRect();
+                        const chairR  = chairEl.getBoundingClientRect();
+                        const cx = chairR.left + chairR.width/2  - arenaR.left;
+                        const cy = chairR.top  + chairR.height/2 - arenaR.top;
+                        ORB_SEQUENCE.forEach(a => {
+                            const orbEl = document.getElementById('orb-' + a.key);
+                            if (!orbEl) return;
+                            const orbR = orbEl.getBoundingClientRect();
+                            const ox = orbR.left + orbR.width/2  - arenaR.left;
+                            const oy = orbR.top  + orbR.height/2 - arenaR.top;
+                            const line = document.getElementById('line-' + a.key);
+                            if (line) { line.setAttribute('x1', ox); line.setAttribute('y1', oy); line.setAttribute('x2', cx); line.setAttribute('y2', cy); }
+                        });
+                    }
+
+                    async function speakPhase(text) {
+                        isSpeaking = true;
+                        if (recognition) { try { recognition.stop(); } catch(e) {} }
+                        await fetch('/api/speak', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text }) });
+                    }
+
+                    async function runCouncilOrbSequence() {
+                        isSpeaking = true;
+                        if (recognition) { try { recognition.stop(); } catch(e) {} }
+
+                        const overlay = document.getElementById('council-overlay');
+                        overlay.classList.add('active');
+                        document.getElementById('council-verdict-label').innerText = 'Agents Deliberating...';
+                        document.getElementById('council-verdict-text').innerText = '';
+                        document.getElementById('council-verdict').classList.remove('visible');
+                        document.getElementById('council-close-btn').classList.remove('visible');
+
+                        await new Promise(r => setTimeout(r, 150));
+                        positionLines();
+
+                        document.getElementById('scout-status').innerText = 'COUNCIL';
+                        document.getElementById('scout-entry').innerText = 'Council in session.';
+
+                        for (const agent of ORB_SEQUENCE) {
+                            updateSystemTheme(agent.color);
+                            setOrbActive(agent.key);
+                            await speakPhase(agent.intro + ' ' + agent.text);
+                            setOrbDone(agent.key);
+                            await new Promise(r => setTimeout(r, 200));
+                        }
+
+                        updateSystemTheme('#d4a847');
+                        setChairmanActive();
+                        document.getElementById('council-verdict-label').innerText = 'Chairman Verdict';
+                        document.getElementById('council-verdict-text').innerText = chairmanText;
+                        document.getElementById('council-verdict').classList.add('visible');
+                        await speakPhase('Chairman final verdict. ' + chairmanText);
+
+                        document.getElementById('chairman-orb').classList.remove('active');
+                        document.querySelectorAll('.council-line').forEach(l => l.classList.remove('active'));
+                        document.getElementById('council-close-btn').classList.add('visible');
+                        isSpeaking = false;
+                        finalizeBoardroomTransaction(data.model);
+                    }
+                    runCouncilOrbSequence();
+                } else {
+                    if (data.type === 'system_monitor' && data.metrics) {
+                        // Rich system health card
+                        const m = data.metrics;
+                        const procList = (m.top_procs || []).map(p => `<span style="color:#ff9500">${p}</span>`).join(', ');
+                        const startupList = (m.startup || []).join(', ') || 'None detected';
+                        const stack = document.getElementById('response-stack');
+                        const card = document.createElement('div');
+                        card.className = 'response-card';
+                        card.innerHTML = `
+                            <div class="speaker-tag">System Health Check</div>
+                            <div style="font-family: monospace; font-size: 11px; line-height: 1.9; margin-top: 8px;">
+                                <b>CPU:</b> ${m.cpu}<br>
+                                <b>RAM:</b> ${m.ram}<br>
+                                <b>Disk:</b> ${m.disk}<br>
+                                <b>Battery:</b> ${m.battery}<br>
+                                <b>Heaviest processes:</b> ${procList || 'None'}<br>
+                                <b>Startup programs:</b> ${startupList}
+                            </div>
+                            <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1);">
+                                ${data.response}
+                            </div>
+                            <div style="font-size: 10px; opacity: 0.4; text-align: right; margin-top: 6px; font-family: monospace;">LATENCY: ${data.execution_time}s</div>`;
+                        stack.appendChild(card);
+                        stack.scrollTop = stack.scrollHeight;
+                    } else if (data.type === 'coding' || data.type === 'browser' || data.type === 'desktop') {
+                        const stack = document.getElementById('response-stack');
+                        const card = document.createElement('div');
+                        card.className = 'response-card';
+                        let cleanText = data.response.replace(/```[a-z]*\n([\s\S]*?)```/g, '<pre>$1</pre>');
+                        const labelMap = {
+                            coding:  `Coding Agent (${data.model})`,
+                            browser: `Web Search (${data.model})`,
+                            desktop: `Desktop Agent`,
+                        };
+                        let tagLabel = labelMap[data.type] || data.model;
+                        card.innerHTML = `<div class="speaker-tag">${tagLabel}</div><div>${cleanText}</div><div style="font-size: 10px; opacity: 0.4; text-align: right; margin-top: 6px; font-family: monospace; letter-spacing: 0.05em;">LATENCY: ${data.execution_time}s</div>`;
+                        stack.appendChild(card);
+                        stack.scrollTop = stack.scrollHeight;
+                    } else {
+                        appendResponseCard(ASSISTANT_NAME, data.response, data.execution_time);
+                    }
+                    finalizeBoardroomTransaction(data.model);
+                }
             })
             .catch(() => {
-                isServerProcessing = false;
-                updateSystemUIState("idle");
-                appendResponseCard("Error", "Could not reach the server.");
-                try { recognition.start(); } catch(e) {}
+                appendResponseCard("System Error", "Link dropped.");
+                finalizeBoardroomTransaction("OFFLINE");
             });
+
+            function finalizeBoardroomTransaction(activeModelLabel) {
+                isServerProcessing = false; 
+                updateSystemTheme('#2DD4A8'); 
+
+                document.getElementById('scout-status').innerText = activeModelLabel.toUpperCase();
+                document.getElementById('scout-entry').innerText = `Transaction pipeline completed via ${activeModelLabel}.`;
+
+                if (isListeningMode) switchToActiveListeningMode();
+                else switchToAmbientMode();
+
+                if (shouldRunSpeechEngine) {
+                    setTimeout(() => {
+                        if (!isServerProcessing && shouldRunSpeechEngine) {
+                            try { recognition.start(); } catch(e) {}
+                        }
+                    }, 1000); 
+                }
+            }
+        }
+
+        function closeCouncilOverlay() {
+            const overlay = document.getElementById('council-overlay');
+            overlay.classList.remove('active');
+            updateSystemTheme('#2DD4A8');
+            // Reset all orbs
+            document.querySelectorAll('.agent-orb').forEach(o => {
+                o.classList.remove('active', 'done');
+            });
+            document.getElementById('chairman-orb').classList.remove('active');
+            document.querySelectorAll('.council-line').forEach(l => {
+                l.classList.remove('active');
+                l.style.stroke = '';
+            });
+        }
+
+        function triggerMapModule() {
+            const stack = document.getElementById('response-stack');
+            const card = document.createElement('div');
+            card.className = 'response-card';
+            card.innerHTML = `
+                <div class="speaker-tag">How Ace Works</div>
+                <div style="font-family: monospace; font-size: 11px; line-height: 1.8; margin-top: 8px;">
+                    Every message you send goes through Hermes — Ace's routing brain.<br>
+                    Hermes reads your message and decides which engine should handle it:<br><br>
+                    <span style="color:#2DD4A8;">&#9654;</span> <b>Casual chat</b> &rarr; Fast model (qwen3:1.7b) — replies in seconds<br>
+                    <span style="color:#2DD4A8;">&#9654;</span> <b>Web search / live info</b> &rarr; Browser agent — opens a real browser tab invisibly<br>
+                    <span style="color:#2DD4A8;">&#9654;</span> <b>Desktop commands</b> &rarr; Desktop agent — controls apps and files on your PC<br>
+                    <span style="color:#2DD4A8;">&#9654;</span> <b>Brainstorming / decisions</b> &rarr; Council — 5 specialist AIs debate simultaneously,<br>
+                    &nbsp;&nbsp;&nbsp;then a Chairman gives one clear verdict<br>
+                    <span style="color:#2DD4A8;">&#9654;</span> <b>Coding</b> &rarr; Coding agent (offline until GPU server arrives)<br><br>
+                    Voice: your microphone is muted while Ace speaks so it never hears itself.
+                </div>`;
+            stack.appendChild(card);
+            stack.scrollTop = stack.scrollHeight;
+        }
+
+        function triggerAlertsModule() {
+            const stack = document.getElementById('response-stack');
+            const card = document.createElement('div');
+            card.className = 'response-card';
+            // Ping the server to get a live health check
+            fetch('/api/health').then(r => r.json()).then(h => {
+                card.innerHTML = `
+                    <div class="speaker-tag">System Health</div>
+                    <div style="font-family: monospace; font-size: 11px; line-height: 1.8; margin-top: 8px;">
+                        <b>Server:</b> ${h.server || 'Running on localhost:5000'}<br>
+                        <b>AI Engine (Ollama):</b> ${h.ollama || 'Port 11434'}<br>
+                        <b>Browser Agent:</b> Headless Chromium (Playwright)<br>
+                        <b>Voice Output:</b> Ryan UK — edge-tts<br>
+                        <b>Voice Input:</b> Browser Web Speech API<br>
+                        <b>Fast Model:</b> ${h.fast_model || 'qwen3:1.7b'}<br>
+                        <b>Smart Model:</b> ${h.smart_model || 'qwen3:4b'}<br>
+                        <b>Coding Model:</b> Offline (GPU server pending)
+                    </div>`;
+            }).catch(() => {
+                card.innerHTML = `
+                    <div class="speaker-tag">System Health</div>
+                    <div style="font-size: 11px; margin-top: 8px;">
+                        Server is running — could not fetch live diagnostics.<br>
+                        Ollama should be on port 11434. Browser agent uses Playwright.
+                    </div>`;
+            });
+            stack.appendChild(card);
+            stack.scrollTop = stack.scrollHeight;
         }
 
         function updateSystemUIState(state) {
             const text = document.getElementById('system-status-text');
-            const dot  = document.getElementById('global-status-dot');
+            const dot = document.getElementById('global-status-dot');
+            if (!dot) return;
             dot.className = "status-dot";
-            if      (state === "listening")  { text.innerText = "LISTENING";  dot.classList.add('listening'); }
-            else if (state === "processing") { text.innerText = "PROCESSING"; dot.classList.add('processing'); }
-            else                             { text.innerText = "ONLINE"; }
+            if(state === "listening") { if(text) text.innerText = "LISTENING"; dot.classList.add('listening'); }
+            else if(state === "processing") { if(text) text.innerText = "PROCESSING"; dot.classList.add('processing'); }
+            else if(state === "muted") { if(text) text.innerText = "MUTED"; dot.classList.add('muted'); }
+            else { if(text) text.innerText = "ONLINE"; dot.classList.add('idle'); }
         }
 
-        function appendResponseCard(speaker, message) {
+        function appendResponseCard(speaker, message, duration = null) {
             const stack = document.getElementById('response-stack');
-            const card  = document.createElement('div');
+            const card = document.createElement('div');
             card.className = 'response-card';
-            card.innerHTML = `<div class="speaker-tag">${speaker}</div><div>${message}</div>`;
-            if (stack.children.length >= 3) stack.removeChild(stack.children[0]);
+            let durationMarkup = duration ? `<div style="font-size: 10px; opacity: 0.4; text-align: right; margin-top: 6px; font-family: monospace; letter-spacing: 0.05em;">LATENCY: ${duration}s</div>` : '';
+            card.innerHTML = `<div class="speaker-tag">${speaker}</div><div>${message}</div>${durationMarkup}`;
             stack.appendChild(card);
+            stack.scrollTop = stack.scrollHeight; 
         }
 
-        function triggerMapModule() {
-            appendResponseCard("System Map", "Routing architecture: wake word -> speech engine -> Flask server -> Ollama -> response.");
-        }
-
-        function triggerAlertsModule() {
-            appendResponseCard("System Status", "Server: localhost:5000 | Ollama: localhost:11434 | Speech: browser Web Speech API");
-        }
-
-        function togglePanel() {
-            document.getElementById('activity-panel').classList.toggle('collapsed');
-        }
+        function togglePanel() { document.getElementById('activity-panel').classList.toggle('collapsed'); }
 
         window.onload = initSpaceScene;
     </script>
