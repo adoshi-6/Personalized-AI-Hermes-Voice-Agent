@@ -401,7 +401,7 @@
 
     <div id="response-stack">
         <div class="response-card" id="welcome-card">
-            <div class="speaker-tag">Ace</div>
+            <div class="speaker-tag" id="welcome-speaker">Assistant</div>
             Online and ready, User. Say "Hey Jarvis" to start talking, or type below.
         </div>
     </div>
@@ -415,19 +415,19 @@
             </div>
             <div>
                 <div class="section-header">THINKING WITH <span id="scout-status">READY</span></div>
-                <div class="panel-entry" id="scout-entry" title="Which AI model or agent Ace is using right now">Waiting for your first message.</div>
+                <div class="panel-entry" id="scout-entry" title="Which AI model or agent is being used right now">Waiting for your first message.</div>
             </div>
             <div>
                 <div class="section-header">MEMORY <span>LIVE</span></div>
-                <div class="panel-entry" id="flux-status" title="How much of Ace's short-term memory is in use — resets each session">0 of 20 messages remembered</div>
+                <div class="panel-entry" id="flux-status" title="How much of the assistant's short-term memory is in use — resets each session">0 of 20 messages remembered</div>
             </div>
             <div>
                 <div class="section-header">LAST ROUTE <span>-</span></div>
-                <div class="panel-entry" id="last-route-entry" title="How Ace decided to handle your last message">No requests yet.</div>
+                <div class="panel-entry" id="last-route-entry" title="How the assistant decided to handle your last message">No requests yet.</div>
             </div>
             <div>
                 <div class="section-header">MODE <span id="mode-indicator">NORMAL</span></div>
-                <div class="panel-entry" id="mode-entry" title="Ace's current operating mode">All systems active.</div>
+                <div class="panel-entry" id="mode-entry" title="The assistant's current operating mode">All systems active.</div>
             </div>
         </div>
     </div>
@@ -452,12 +452,30 @@
 
     <script src="/three.min.js"></script>
     <script>
-
         // ── Config — must match config.py ───────────────────────────
         const ASSISTANT_NAME = "Jarvis";   // Change to match config.py
         const USER_NAME      = "User";     // Change to match config.py
-        const WAKE_WORDS     = ["hey jarvis", "hi jarvis", "wake up jarvis", "ok jarvis"];
-        // ─────────────────────────────────────────────────────────────
+        // Wake words are auto-generated from ASSISTANT_NAME — no need to edit these.
+        const _n = ASSISTANT_NAME.toLowerCase();
+        const WAKE_WORDS = [
+            `hey ${_n}`, `hi ${_n}`, `wake up ${_n}`, `ok ${_n}`, `okay ${_n}`,
+            `${_n} wake up`, `${_n} are you there`, `${_n} i need you`,
+            `${_n} listen`, `listen ${_n}`
+        ];
+        // ─────────────────────────────────────────────────────────────────
+
+        window.onload = () => {
+            // Inject configured names into the welcome card
+            document.getElementById('welcome-speaker').textContent = ASSISTANT_NAME;
+            const welcomeText = document.getElementById('welcome-card').childNodes[2];
+            if (welcomeText) welcomeText.textContent =
+                `Online and ready, ${USER_NAME}. Say "${WAKE_WORDS[0]}" to start talking, or type below.`;
+            // Update hint bar
+            const hintEl = document.querySelector('.hint-text');
+            if (hintEl) hintEl.textContent =
+                `SAY "${WAKE_WORDS[0].toUpperCase()}" TO START TALKING — "TURN OFF VOICE MODE" TO STOP`;
+            initSpaceScene();
+        };
 
         let scene, camera, renderer, starParticles, orbMesh, orbGlow;
         let recognition;
@@ -467,7 +485,7 @@
         let isServerProcessing = false;
         let isSpeaking = false;
 
-        // Stop Ace audio only when the tab is closed — not when switching to another tab.
+        // Stop audio only when the tab is closed — not when switching to another tab.
         // beforeunload fires on close/navigate-away; pagehide is the mobile equivalent.
         window.addEventListener('beforeunload', () => {
             fetch('/api/stop_audio', { method: 'POST' }).catch(() => {});
@@ -517,7 +535,7 @@
 
                 // Phrases that signal a question mid-sentence
                 const questionPhrases = ["can you", "could you", "would you", "should i",
-                    "do you", "does ace", "is there", "are there", "is it", "is this",
+                    "do you", `does ${ASSISTANT_NAME.toLowerCase()}`, "is there", "are there", "is it", "is this",
                     "what is", "what are", "what's", "how do", "how does", "how can",
                     "how much", "how many", "why is", "why does", "why are",
                     "tell me", "explain", "show me"];
@@ -526,7 +544,7 @@
                 const isQuestion = questionStarters.includes(firstWord) ||
                     questionPhrases.some(p => lowerCorrected.startsWith(p)) ||
                     lowerCorrected.includes("?") ||
-                    (firstWord === "ace" && questionStarters.includes(secondWord));
+                    (firstWord === ASSISTANT_NAME.toLowerCase() && questionStarters.includes(secondWord));
 
                 // Exclamation detection
                 const exclamationWords = ["stop", "yes", "no", "cancel", "abort",
@@ -651,11 +669,9 @@
                 else {
                     // All wake phrases that activate voice mode
                     const functionalTriggers = [
-                        "hey jarvis", "hi ace", "wake up ace", "ok ace", "okay ace",
-                        "ace wake up", "ace are you there", "ace i need you",
+                        ...WAKE_WORDS,
                         "activate voice mode", "turn on microphone", "turn microphone on",
-                        "voice mode on", "voice mode", "start listening",
-                        "ace listen", "listen ace"
+                        "voice mode on", "voice mode", "start listening"
                     ];
                     let targetTriggerMatch = null;
                     for (let trigger of functionalTriggers) {
@@ -674,7 +690,7 @@
                         if (isolatedTrailingCommand.length > 0) {
                             postCommandToBackend(autoCorrectSpeechAndPunctuate(isolatedTrailingCommand), 'voice');
                         } else {
-                            appendResponseCard(ASSISTANT_NAME, "Listening. Go ahead, User.");
+                            appendResponseCard(ASSISTANT_NAME, `Listening. Go ahead, ${USER_NAME}.`);
                         }
                     }
                 }
@@ -1000,17 +1016,17 @@
             const card = document.createElement('div');
             card.className = 'response-card';
             card.innerHTML = `
-                <div class="speaker-tag">How Ace Works</div>
+                <div class="speaker-tag">How ${ASSISTANT_NAME} Works</div>
                 <div style="font-family: monospace; font-size: 11px; line-height: 1.8; margin-top: 8px;">
-                    Every message you send goes through Hermes — Ace's routing brain.<br>
+                    Every message you send goes through Hermes — ${ASSISTANT_NAME}'s routing brain.<br>
                     Hermes reads your message and decides which engine should handle it:<br><br>
-                    <span style="color:#2DD4A8;">&#9654;</span> <b>Casual chat</b> &rarr; Fast model (qwen3:1.7b) — replies in seconds<br>
+                    <span style="color:#2DD4A8;">&#9654;</span> <b>Casual chat</b> &rarr; Fast model — replies in seconds<br>
                     <span style="color:#2DD4A8;">&#9654;</span> <b>Web search / live info</b> &rarr; Browser agent — opens a real browser tab invisibly<br>
                     <span style="color:#2DD4A8;">&#9654;</span> <b>Desktop commands</b> &rarr; Desktop agent — controls apps and files on your PC<br>
                     <span style="color:#2DD4A8;">&#9654;</span> <b>Brainstorming / decisions</b> &rarr; Council — 5 specialist AIs debate simultaneously,<br>
                     &nbsp;&nbsp;&nbsp;then a Chairman gives one clear verdict<br>
                     <span style="color:#2DD4A8;">&#9654;</span> <b>Coding</b> &rarr; Coding agent (offline until GPU server arrives)<br><br>
-                    Voice: your microphone is muted while Ace speaks so it never hears itself.
+                    Voice: your microphone is muted while ${ASSISTANT_NAME} speaks so it never hears itself.
                 </div>`;
             stack.appendChild(card);
             stack.scrollTop = stack.scrollHeight;
@@ -1069,7 +1085,7 @@
 
         function togglePanel() { document.getElementById('activity-panel').classList.toggle('collapsed'); }
 
-        window.onload = initSpaceScene;
+        // window.onload is defined at the top of this script block
     </script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 from config import (ASSISTANT_NAME, USER_NAME, FAST_MODEL, SMART_MODEL,
                    DESKTOP_PATH, COUNCIL_TRIGGERS, CODE_WORDS,
-                   PROTECTED_ACTIONS, UNLOCK_PHRASES, PIN_LENGTH)
+                   PROTECTED_ACTIONS, UNLOCK_PHRASES, PIN_LENGTH,
+                   VOICE_TAG, WAKE_WORD)
 from flask import Flask, request, jsonify
 import hashlib
 import pyautogui   # keyboard and mouse control for desktop typing
@@ -98,7 +99,7 @@ pending_code_word         = None   # Holds a code word action waiting for PIN co
 
 # ============================================================
 # SELF-LEARNING MEMORY FILES
-# These files let Ace learn from mistakes and evolve over time.
+# These files let the assistant learn from mistakes and evolve over time.
 # They are plain JSON — you can open and edit them any time.
 # ============================================================
 MEMORY_DIR       = "ace_memory"
@@ -199,7 +200,7 @@ def build_system_advice(report: dict, user_query: str) -> str:
     )
 
     system_prompt = (
-        "You are Ace, {USER_NAME}'s personal AI assistant. No emojis. No filler phrases. "
+        f"You are {ASSISTANT_NAME}, {USER_NAME}'s personal AI assistant. No emojis. No filler phrases. "
         "You have just run a live hardware scan of the user's PC. "
         "Give a direct assessment of system health and specific actionable advice. "
         "If something looks bad, say so clearly. "
@@ -208,7 +209,7 @@ def build_system_advice(report: dict, user_query: str) -> str:
 
     return ollama_call(
         SMART_MODEL, system_prompt,
-        f"Aryan asked: {user_query}\n\nLive system data:\n{metrics_text}"
+        f"{USER_NAME} asked: {user_query}\n\nLive system data:\n{metrics_text}"
     )
 
 def _load_json(path: str, default) -> any:
@@ -280,7 +281,7 @@ def save_self_edit(description: str, change_type: str, detail: str, approved: bo
 def build_lessons_context() -> str:
     """
     Injects stored lessons and recent corrections into the system prompt
-    so Ace walks into every conversation already knowing what not to repeat.
+    so the assistant walks into every conversation already knowing what not to repeat.
     """
     lessons     = load_lessons()
     corrections = load_corrections()
@@ -296,7 +297,7 @@ def build_lessons_context() -> str:
                          f"'{c['old_response'][:80]}...'. Correct answer: '{c['corrected_response'][:80]}...'")
         parts.append("Recent corrections to remember:\n" + "\n".join(lines))
     if parts:
-        return "\n\n[ACE SELF-LEARNING CONTEXT]\n" + "\n\n".join(parts) + "\n"
+        return "\n\n[SELF-LEARNING CONTEXT]\n" + "\n\n".join(parts) + "\n"
     return ""
 
 # ============================================================
@@ -459,7 +460,7 @@ def execute_code_word(action_key: str) -> str:
 
         summary = ollama_call(
             FAST_MODEL,
-            "You are Ace giving Aryan a concise briefing. No emojis. No filler. "
+            f"You are {ASSISTANT_NAME} giving {USER_NAME} a concise briefing. No emojis. No filler. "
             "Summarize what has happened this session, what you have learned, "
             "and what your current status is. Be direct and brief — 3 to 5 sentences max.",
             briefing_context
@@ -495,7 +496,7 @@ def execute_code_word(action_key: str) -> str:
 
     elif action_key == "handoff":
         summary = f"Session summary — {len(chat_history)//2} exchanges. Mode: {ACE_MODE}. Lessons: {len(load_lessons())}."
-        path = os.path.join(DESKTOP_PATH, "ace_handoff.txt")
+        path = os.path.join(DESKTOP_PATH, "session_handoff.txt")
         try:
             with open(path, "w") as hf:
                 hf.write(summary)
@@ -503,7 +504,7 @@ def execute_code_word(action_key: str) -> str:
                 time.sleep(1.5)
                 os.kill(os.getpid(), 9)
             threading.Thread(target=_shutdown, daemon=True).start()
-            return f"Handoff saved to ace_handoff.txt on your desktop. Shutting down."
+            return f"Handoff saved to session_handoff.txt on your desktop. Shutting down."
         except Exception as e:
             return f"Handoff file write failed: {e}"
 
@@ -553,7 +554,7 @@ def should_trigger_browser(text: str) -> bool:
 
 
 def should_trigger_correction(text: str) -> bool:
-    """Detects when Aryan is telling Ace it made a mistake."""
+    """Detects when the user is telling the assistant it made a mistake."""
     keywords = [
         "that was wrong", "you were wrong", "that's incorrect", "you made a mistake",
         "that's not right", "you got that wrong", "incorrect", "bad answer",
@@ -564,7 +565,7 @@ def should_trigger_correction(text: str) -> bool:
 
 
 def should_trigger_self_modification(text: str) -> bool:
-    """Detects when Aryan wants Ace to change how it behaves or learn something."""
+    """Detects when the user wants the assistant to change how it behaves or learn something."""
     keywords = [
         "change yourself", "modify yourself", "update yourself", "alter yourself",
         "learn to", "remember to always", "remember to never", "from now on",
@@ -578,12 +579,12 @@ def should_trigger_self_modification(text: str) -> bool:
 
 def build_self_modification_proposal(command: str) -> dict:
     """
-    Uses the model to interpret what Aryan wants changed and
+    Uses the model to interpret what the user wants changed and
     builds a structured proposal to present for approval.
     """
     extraction = ollama_call(
         FAST_MODEL,
-        "You are Ace. Aryan wants you to change something about how you behave. "
+        f"You are {ASSISTANT_NAME}. {USER_NAME} wants you to change something about how you behave. "
         "Extract and describe the proposed change. "
         "Respond ONLY as JSON: "
         '{"change_type": "behavior|tone|lesson|rule", '
@@ -653,7 +654,7 @@ def should_trigger_desktop(text: str) -> bool:
 COUNCIL_AGENTS = {
     "contrarian": {
         "system": (
-            "You are The Contrarian on Ace's advisory council. "
+            f"You are The Contrarian on {ASSISTANT_NAME}'s advisory council. "
             "Your job: identify every critical risk, flaw, hidden cost, and reason this idea will fail. "
             "Be direct and ruthless. No fluff. Maximum 2 sentences. "
             "Do not begin with 'As a contrarian' or similar preamble."
@@ -662,7 +663,7 @@ COUNCIL_AGENTS = {
     },
     "first_principles": {
         "system": (
-            "You are the First Principles Thinker on Ace's advisory council. "
+            f"You are the First Principles Thinker on {ASSISTANT_NAME}'s advisory council. "
             "Strip every assumption and analogy. Rebuild the core logic from raw axioms only. "
             "Maximum 2 sentences. No preamble."
         ),
@@ -670,7 +671,7 @@ COUNCIL_AGENTS = {
     },
     "expansionist": {
         "system": (
-            "You are The Expansionist on Ace's advisory council. "
+            f"You are The Expansionist on {ASSISTANT_NAME}'s advisory council. "
             "Find the biggest hidden upside, scalability plays, and opportunities being missed. "
             "Maximum 2 sentences. No preamble."
         ),
@@ -678,7 +679,7 @@ COUNCIL_AGENTS = {
     },
     "outsider": {
         "system": (
-            "You are The Outsider on Ace's advisory council. "
+            f"You are The Outsider on {ASSISTANT_NAME}'s advisory council. "
             "Evaluate with complete objectivity. No jargon, no emotional attachment. "
             "Would this make sense to a smart person with no industry knowledge? "
             "Maximum 2 sentences. No preamble."
@@ -687,7 +688,7 @@ COUNCIL_AGENTS = {
     },
     "executor": {
         "system": (
-            "You are The Executor on Ace's advisory council. "
+            f"You are The Executor on {ASSISTANT_NAME}'s advisory council. "
             "Ignore theory. Focus only on execution. "
             "What is the single most concrete, actionable next step to take right now? "
             "Maximum 2 sentences. No preamble."
@@ -697,7 +698,7 @@ COUNCIL_AGENTS = {
 }
 
 CHAIRMAN_SYSTEM = (
-    "You are The Chairman of Ace's advisory council. "
+    f"You are The Chairman of {ASSISTANT_NAME}'s advisory council. "
     "You have received independent briefs from 5 specialist agents. "
     "Synthesize them into one clear, unified recommendation — the single best path forward. "
     "Be decisive. No hedging. Maximum 3 sentences."
@@ -811,7 +812,7 @@ def execute_browser_harness(user_query: str) -> str:
 
 def handle_desktop_command(command: str) -> str:
     """
-    Gives Ace access to the user's desktop:
+    Gives the assistant access to the user's desktop:
     - Open applications (notepad, calculator, chrome, explorer)
     - List files on the desktop
     - Read a named file from the desktop
@@ -1199,7 +1200,7 @@ def orchestrate_command_routing():
 
     #  Voice control 
     if any(x in lower_cmd for x in ["turn microphone off", "microphone off", "voice mode off", "deactivate voice"]):
-        reply = "Entering standby. Say 'Hey Ace' or 'activate voice mode' when you need me."
+        reply = f"Entering standby. Say '{WAKE_WORD}' or 'activate voice mode' when you need me."
         return respond(reply, rtype="shutdown", speak=True)
 
     if any(x in lower_cmd for x in ["activate voice mode", "turn on microphone", "voice mode on"]):
@@ -1251,7 +1252,7 @@ def orchestrate_command_routing():
         print(f" [Hermes]: Browser harness active...")
         web_context = execute_browser_harness(command)
         synthesis_system = (
-            "You are Ace, {USER_NAME}'s personal AI assistant with live web access. "
+            f"You are {ASSISTANT_NAME}, {USER_NAME}'s personal AI assistant with live web access. "
             "Never use emojis. Never start with filler phrases like Certainly or Great question. "
             "Summarize the most relevant facts from the web data to answer the user's question directly. "
             "2 to 4 sentences max. Skip navigation text and ads. "
@@ -1260,7 +1261,7 @@ def orchestrate_command_routing():
         try:
             reply = ollama_call(
                 SMART_MODEL, synthesis_system,
-                f"Aryan asked: {command}\n\nLive web data:\n{web_context}"
+                f"{USER_NAME} asked: {command}\n\nLive web data:\n{web_context}"
             )
             return respond(reply, rtype="browser", model="hermes-browser", speak=True)
         except Exception as e:
@@ -1315,7 +1316,7 @@ def orchestrate_command_routing():
             return respond(reply, speak=True)
         print(f"[Hermes]: Coding agent requested -> {CODING_MODEL}")
         coding_system = (
-            "You are Ace's software engineering agent for the user. "
+            f"You are {ASSISTANT_NAME}'s software engineering agent for the user. "
             "Never use emojis. Never start with filler phrases like Certainly or Great question. "
             "Provide clean, working code with the shortest necessary explanation. "
             "If fixing something, state what was wrong in one sentence first."
@@ -1326,8 +1327,8 @@ def orchestrate_command_routing():
 
     # 
     # CASE E — SELF-MODIFICATION REQUEST
-    # Aryan asks Ace to change how it behaves, learn something, or fix itself.
-    # Ace proposes the change, then waits for explicit approval before applying.
+    # The user asks the assistant to change how it behaves, learn something, or fix itself.
+    # The assistant proposes the change, then waits for explicit approval before applying.
     # 
     elif should_trigger_self_modification(command):
         print(f"[Self-Modify]: Self-modification request detected.")
@@ -1358,7 +1359,7 @@ def orchestrate_command_routing():
 
     # 
     # CASE G — EXPLICIT CORRECTION ("that was wrong", "you made a mistake")
-    # Ace logs the mistake and asks Aryan for the correct answer.
+    # The assistant logs the mistake and asks the user for the correct answer.
     # 
     elif should_trigger_correction(command):
         print(f"[Self-Learn]: Correction signal detected.")
@@ -1369,7 +1370,7 @@ def orchestrate_command_routing():
         # Derive a lesson automatically
         lesson_text = ollama_call(
             FAST_MODEL,
-            "You are Ace. Based on the mistake described, write one short lesson (1 sentence) "
+            f"You are {ASSISTANT_NAME}. Based on the mistake described, write one short lesson (1 sentence) "
             "that you should remember to avoid repeating this error. Start with 'Remember:'.",
             f"Mistake: {command}\nBad response was: {last_reply}"
         )
@@ -1390,10 +1391,10 @@ def orchestrate_command_routing():
         print(f" [Hermes]: Conversational route -> {FAST_MODEL}")
         lessons_ctx = build_lessons_context()
         chat_system = (
-            "You are Ace, {USER_NAME}'s personal AI assistant. "
+            f"You are {ASSISTANT_NAME}, {USER_NAME}'s personal AI assistant. "
             "Never use emojis. Never start with filler phrases like Certainly or Great question. "
             "Speak like a sharp, trusted friend — warm, plain-spoken, and brief. "
-            "Keep responses to 1 or 2 sentences unless Aryan asks for more detail. "
+            f"Keep responses to 1 or 2 sentences unless {USER_NAME} asks for more detail. "
             "If you do not know something, say so plainly."
             + lessons_ctx
         )
@@ -1418,7 +1419,7 @@ def orchestrate_command_routing():
 
 if __name__ == '__main__':
     print("\n" + "="*60)
-    print("  ACE SERVER — Hermes Parallel Architecture")
+    print(f"  {ASSISTANT_NAME.upper()} SERVER — Hermes Parallel Architecture")
     print(f"  Fast:   {FAST_MODEL}")
     print(f"  Smart:  {SMART_MODEL}")
     print(f"  Coding: {CODING_MODEL}")
