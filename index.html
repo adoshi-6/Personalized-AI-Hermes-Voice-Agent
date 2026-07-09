@@ -389,7 +389,10 @@
     </div>
 
     <header class="glass-panel">
-        <div class="wordmark">ASSISTANT<span>.</span></div>
+        <div style="display: flex; align-items: center;">
+            <div class="wordmark">HERMES<span>.</span></div>
+            <div id="clock-display" style="font-size: 12px; font-family: monospace; color: rgba(255,255,255,0.6); margin-left: 20px; letter-spacing: 0.05em;"></div>
+        </div>
         <div class="header-right">
             <button class="ghost-btn" onclick="triggerMapModule()" title="Show system routing and agent layout">HOW ASSISTANT WORKS</button>
             <button class="ghost-btn" onclick="triggerAlertsModule()" title="Show server and connection status">SYSTEM HEALTH</button>
@@ -577,10 +580,48 @@
             starParticles = new THREE.Points(starGeometry, new THREE.PointsMaterial({ color: 0xffffff, size: 0.02, transparent: true, opacity: 0.8 }));
             scene.add(starParticles);
 
-            orbMesh = new THREE.Mesh(new THREE.SphereGeometry(0.6, 64, 64), new THREE.MeshBasicMaterial({ color: 0x2DD4A8 }));
+            // ── Electron Cloud Particle Orb ──────────────────────────
+            const PARTICLE_COUNT  = 1800;
+            const orbGeometry     = new THREE.BufferGeometry();
+            const orbPositions    = new Float32Array(PARTICLE_COUNT * 3);
+            const orbSpeeds       = new Float32Array(PARTICLE_COUNT);
+            const orbRadii        = new Float32Array(PARTICLE_COUNT);
+            const orbPhases       = new Float32Array(PARTICLE_COUNT);
+            const orbInclinations = new Float32Array(PARTICLE_COUNT);
+
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                const shell  = Math.random() < 0.3 ? 0.25 : Math.random() < 0.6 ? 0.55 : 0.85;
+                const radius = shell + (Math.random() - 0.5) * 0.18;
+                orbRadii[i]        = radius;
+                orbPhases[i]       = Math.random() * Math.PI * 2;
+                orbInclinations[i] = Math.acos(2 * Math.random() - 1);
+                orbSpeeds[i]       = 0.3 + Math.random() * 0.9;
+                orbPositions[i * 3]     = 0;
+                orbPositions[i * 3 + 1] = 0;
+                orbPositions[i * 3 + 2] = 0;
+            }
+
+            orbGeometry.setAttribute('position', new THREE.BufferAttribute(orbPositions, 3));
+            window._orbPositions    = orbPositions;
+            window._orbSpeeds       = orbSpeeds;
+            window._orbRadii        = orbRadii;
+            window._orbPhases       = orbPhases;
+            window._orbInclinations = orbInclinations;
+            window._particleCount   = PARTICLE_COUNT;
+
+            orbMesh = new THREE.Points(orbGeometry, new THREE.PointsMaterial({
+                color:       0x2DD4A8,
+                size:        0.028,
+                transparent: true,
+                opacity:     0.85,
+                sizeAttenuation: true,
+            }));
             scene.add(orbMesh);
 
-            orbGlow = new THREE.Mesh(new THREE.SphereGeometry(0.8, 32, 32), new THREE.MeshBasicMaterial({ color: 0x2DD4A8, transparent: true, opacity: 0.25, side: THREE.BackSide }));
+            orbGlow = new THREE.Mesh(
+                new THREE.SphereGeometry(0.18, 24, 24),
+                new THREE.MeshBasicMaterial({ color: 0x2DD4A8, transparent: true, opacity: 0.55 })
+            );
             scene.add(orbGlow);
 
             window.addEventListener('resize', onWindowResize);
@@ -617,9 +658,33 @@
                 liveMicrophoneAmplitude += (0.0 - liveMicrophoneAmplitude) * 0.1;
             }
 
-            let finalScalingFactor = 1.0 + breathingFactor + (liveMicrophoneAmplitude * 1.2);
-            if (orbMesh) orbMesh.scale.set(finalScalingFactor, finalScalingFactor, finalScalingFactor);
-            if (orbGlow) orbGlow.scale.set(finalScalingFactor * 1.25, finalScalingFactor * 1.25, finalScalingFactor * 1.25);
+            let scaleFactor = 1.0 + breathingFactor + (liveMicrophoneAmplitude * 0.6);
+
+            // Animate each electron cloud particle along its orbital path
+            if (orbMesh && window._orbPositions) {
+                const pos   = window._orbPositions;
+                const count = window._particleCount;
+                for (let i = 0; i < count; i++) {
+                    const r     = window._orbRadii[i] * scaleFactor;
+                    const speed = window._orbSpeeds[i];
+                    const phase = window._orbPhases[i] + time * speed;
+                    const incl  = window._orbInclinations[i] + time * speed * 0.15;
+                    pos[i * 3]     = r * Math.sin(incl) * Math.cos(phase);
+                    pos[i * 3 + 1] = r * Math.sin(incl) * Math.sin(phase);
+                    pos[i * 3 + 2] = r * Math.cos(incl);
+                }
+                orbMesh.geometry.attributes.position.needsUpdate = true;
+                // Pulse particle colour with mic amplitude
+                orbMesh.material.opacity = Math.min(0.95, 0.7 + liveMicrophoneAmplitude * 0.5);
+            }
+
+            // Core glow pulses with mic
+            if (orbGlow) {
+                const gs = 0.18 + liveMicrophoneAmplitude * 0.25 + Math.sin(time * 2.0) * 0.03;
+                orbGlow.scale.set(gs / 0.18, gs / 0.18, gs / 0.18);
+                orbGlow.material.opacity = 0.45 + liveMicrophoneAmplitude * 0.4;
+            }
+
             if (starParticles) starParticles.rotation.y = time * 0.02;
             renderer.render(scene, camera);
         }
@@ -987,11 +1052,23 @@
                 else switchToAmbientMode();
 
                 if (shouldRunSpeechEngine) {
-                    setTimeout(() => {
-                        if (!isServerProcessing && shouldRunSpeechEngine) {
-                            try { recognition.start(); } catch(e) {}
+                    const checkAudioState = async () => {
+                        if (isServerProcessing) return; 
+                        try {
+                            const res = await fetch('/api/is_speaking');
+                            const data = await res.json();
+                            if (data.speaking) {
+                                setTimeout(checkAudioState, 500); 
+                            } else {
+                                if (shouldRunSpeechEngine) {
+                                    try { recognition.start(); } catch(e) {}
+                                }
+                            }
+                        } catch (e) {
+                            setTimeout(checkAudioState, 1000);
                         }
-                    }, 1000); 
+                    };
+                    setTimeout(checkAudioState, 500); 
                 }
             }
         }
@@ -1085,7 +1162,16 @@
 
         function togglePanel() { document.getElementById('activity-panel').classList.toggle('collapsed'); }
 
-        // window.onload is defined at the top of this script block
+        window.onload = initSpaceScene;
+        
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const dateString = now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+            document.getElementById('clock-display').innerText = `${dateString} | ${timeString}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
     </script>
 </body>
 </html>

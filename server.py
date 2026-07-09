@@ -16,7 +16,7 @@ import subprocess
 import glob
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout, as_completed
 from playwright.sync_api import sync_playwright
-from audio_provider import speak_text
+from audio_provider import speak_text, is_speaking
 
 app = Flask(__name__)
 
@@ -200,7 +200,7 @@ def build_system_advice(report: dict, user_query: str) -> str:
     )
 
     system_prompt = (
-        f"You are {ASSISTANT_NAME}, {USER_NAME}'s personal AI assistant. No emojis. No filler phrases. "
+        f"You are {ASSISTANT_NAME}, {USER_NAME}'s personal AI assistant. Always address {USER_NAME} as 'sir'. No emojis. No filler phrases. "
         "You have just run a live hardware scan of the user's PC. "
         "Give a direct assessment of system health and specific actionable advice. "
         "If something looks bad, say so clearly. "
@@ -1252,7 +1252,7 @@ def orchestrate_command_routing():
         print(f" [Hermes]: Browser harness active...")
         web_context = execute_browser_harness(command)
         synthesis_system = (
-            f"You are {ASSISTANT_NAME}, {USER_NAME}'s personal AI assistant with live web access. "
+            f"You are {ASSISTANT_NAME}, {USER_NAME}'s personal AI assistant with live web access. Always address {USER_NAME} as 'sir'. "
             "Never use emojis. Never start with filler phrases like Certainly or Great question. "
             "Summarize the most relevant facts from the web data to answer the user's question directly. "
             "2 to 4 sentences max. Skip navigation text and ads. "
@@ -1427,3 +1427,8 @@ if __name__ == '__main__':
     print("  Council: 5 parallel agents + Chairman")
     print("="*60 + "\n")
     app.run(host='0.0.0.0', port=5000, debug=False)
+
+@app.route('/api/is_speaking', methods=['GET'])
+def api_is_speaking():
+    return jsonify({"speaking": is_speaking()})
+

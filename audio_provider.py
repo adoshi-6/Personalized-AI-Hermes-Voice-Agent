@@ -12,6 +12,10 @@ import threading
 # frontend mic muted for exactly the right duration.
 _speak_lock = threading.Lock()
 
+def is_speaking():
+    return _speak_lock.locked()
+
+
 def speak_text(text, voice_mode="standard"):
     """
     Converts text to speech using the Ryan (UK) voice.
