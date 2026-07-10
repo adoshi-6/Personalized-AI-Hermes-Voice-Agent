@@ -710,17 +710,7 @@
                 
                 console.log("🛰️ [Voice Core] Intercepted Raw Audio Token:", transcript);
 
-                // Allow turning off voice mode by voice command
-                if (transcriptLower.includes("microphone off") ||
-                    transcriptLower.includes("text mode only") ||
-                    transcriptLower.includes("turn off voice mode") ||
-                    transcriptLower.includes("voice mode off")) {
-                    switchToAmbientMode();
-                    postCommandToBackend("turn off voice mode", 'voice');
-                    return;
-                }
-
-                // Check if the user referred to the assistant
+                // Isolate command by stripping wake word first
                 const nameKey = ASSISTANT_NAME.toLowerCase();
                 const wakePhrases = [
                     `hey ${nameKey}`, `hi ${nameKey}`, `ok ${nameKey}`, `okay ${nameKey}`, nameKey
@@ -729,7 +719,6 @@
                 if (nameKey === 'chronos') {
                     wakePhrases.push("hey kronos", "hi kronos", "ok kronos", "okay kronos", "kronos");
                 }
-                
                 let matchedWake = "";
                 for (let w of wakePhrases) {
                     if (transcriptLower.includes(w)) {
@@ -739,18 +728,34 @@
                     }
                 }
 
+                let command = transcript;
                 if (matchedWake) {
                     let idx = transcriptLower.indexOf(matchedWake);
-                    let command = transcript.substring(idx + matchedWake.length).trim();
-                    command = command.replace(/^[.,\s!?]+|[.,\s!?]+$/g, "").trim();
+                    command = transcript.substring(idx + matchedWake.length).trim();
+                }
+                command = command.replace(/^[.,\s!?]+|[.,\s!?]+$/g, "").trim();
+                const commandLower = command.toLowerCase();
 
-                    // If they just said the wake word with nothing else,
-                    // give an instant local ping instead of sending it to the LLM.
+                // Check for voice shutdown commands (only if it matches the complete isolated command)
+                const voiceOffCommands = [
+                    "turn off voice mode", "turn off the microphone", "microphone off", 
+                    "voice mode off", "deactivate voice", "text mode only", "turn microphone off"
+                ];
+
+                if (voiceOffCommands.includes(commandLower)) {
+                    switchToAmbientMode();
+                    postCommandToBackend("turn off voice mode", 'voice');
+                    return;
+                }
+
+                if (isListeningMode) {
+                    postCommandToBackend(transcript, 'voice');
+                } else if (matchedWake) {
+                    // If they just said the wake word with nothing else, trigger the ping response
                     if (!command) {
                         speakWakePing();
                         return;
                     }
-
                     postCommandToBackend(command, 'voice');
                 }
             };
@@ -775,8 +780,8 @@
 
         function switchToAmbientMode() {
             isListeningMode = false;
-            shouldRunSpeechEngine = false;
-            if (recognition) { try { recognition.stop(); } catch(e) {} }
+            shouldRunSpeechEngine = true;
+            if (recognition) { try { recognition.start(); } catch(e) {} }
             const btn = document.getElementById('master-mic-btn');
             const svgIcon = document.getElementById('mic-icon-svg');
             if (btn) btn.classList.remove('active');
