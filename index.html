@@ -736,11 +736,9 @@
                     if (matchedWake) {
                         let idx = transcriptLower.indexOf(matchedWake);
                         command = transcript.substring(idx + matchedWake.length).trim();
-                        if (command.startsWith(",") || command.startsWith(".")) {
-                            command = command.substring(1).trim();
-                        }
+                        command = command.replace(/^[.,\s!?]+|[.,\s!?]+$/g, "").trim();
                     } else {
-                        command = transcript;
+                        command = transcript.replace(/^[.,\s!?]+|[.,\s!?]+$/g, "").trim();
                     }
 
                     // If they just said "Chronos" / "Hey Chronos" with nothing else,
@@ -812,7 +810,12 @@
         function postCommandToBackend(payloadText, source) {
             isServerProcessing = true;
             updateSystemUIState("processing");
-            appendResponseCard(source === 'voice' ? "${USER_NAME} (Voice)" : "${USER_NAME} (Keyboard)", payloadText);
+            let displayPayload = payloadText;
+            if (typeof displayPayload === 'string') {
+                const regex = new RegExp("\\b" + ASSISTANT_NAME + "\\b", 'gi');
+                displayPayload = displayPayload.replace(regex, ASSISTANT_NAME.toUpperCase());
+            }
+            appendResponseCard(source === 'voice' ? "${USER_NAME} (Voice)" : "${USER_NAME} (Keyboard)", displayPayload);
 
             document.getElementById('scout-status').innerText = "THINKING";
             document.getElementById('scout-entry').innerText = "Routing transaction package across local array nodes...";
