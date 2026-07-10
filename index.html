@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice Assistant</title>
+    <title>Chronos — Personal Assistant</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         body, html { 
@@ -80,6 +80,16 @@
         }
         .response-card .speaker-tag { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; color: var(--accent-card-border, #2DD4A8); transition: color 0.4s; }
         .response-card pre { font-family: monospace; font-size: 11px; background: rgba(0,0,0,0.3); padding: 6px; border-radius: 4px; overflow-x: auto; margin-top: 6px; user-select: text; white-space: pre-wrap; }
+        .copy-btn {
+            display: inline-block; margin-top: 6px; padding: 3px 10px;
+            font-size: 9px; font-family: monospace; letter-spacing: 0.08em;
+            color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 3px;
+            cursor: pointer; transition: color 0.2s, border-color 0.2s;
+            user-select: none;
+        }
+        .copy-btn:hover { color: #2DD4A8; border-color: #2DD4A8; }
+        .copy-btn.copied { color: #34C759; border-color: #34C759; }
 
         #control-dock {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 130px;
@@ -126,7 +136,7 @@
         @keyframes slideIn { 0% { opacity: 0; transform: translateX(20px); } 100% { opacity: 1; transform: translateX(0); } }
         @keyframes pulseGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
 
-        /*  COUNCIL ORB DISPLAY  */
+        /* ── COUNCIL ORB DISPLAY ─────────────────────────────────── */
         #council-overlay {
             position: fixed; inset: 0; z-index: 100;
             background: rgba(8, 9, 14, 0.92);
@@ -373,7 +383,7 @@
             <!-- Chairman — center -->
             <div id="chairman-orb">
                 <div id="chairman-orb-inner">
-                    <span id="chairman-orb-icon"></span>
+                    <span id="chairman-orb-icon">★</span>
                 </div>
                 <div id="chairman-orb-label">Chairman</div>
             </div>
@@ -394,7 +404,7 @@
             <div id="clock-display" style="font-size: 12px; font-family: monospace; color: rgba(255,255,255,0.6); margin-left: 20px; letter-spacing: 0.05em;"></div>
         </div>
         <div class="header-right">
-            <button class="ghost-btn" onclick="triggerMapModule()" title="Show system routing and agent layout">HOW ASSISTANT WORKS</button>
+            <button class="ghost-btn" onclick="triggerMapModule()" title="Show system routing and agent layout">How ${ASSISTANT_NAME} Works</button>
             <button class="ghost-btn" onclick="triggerAlertsModule()" title="Show server and connection status">SYSTEM HEALTH</button>
             <div class="status-container">
                 <span id="system-status-text">ONLINE</span>
@@ -404,13 +414,13 @@
 
     <div id="response-stack">
         <div class="response-card" id="welcome-card">
-            <div class="speaker-tag" id="welcome-speaker">Assistant</div>
-            Online and ready, User. Say "Hey Jarvis" to start talking, or type below.
+            <div class="speaker-tag">${ASSISTANT_NAME}</div>
+            Online and ready, ${USER_NAME}. Say "hey ${assistantKey}" to start talking, or type below.
         </div>
     </div>
 
     <div id="activity-panel" class="glass-panel">
-        <div class="panel-toggle" onclick="togglePanel()"></div>
+        <div class="panel-toggle" onclick="togglePanel()">🗲</div>
         <div class="panel-content" id="panel-content-area">
             <div>
                 <div class="section-header">SESSION <span>#</span></div>
@@ -418,19 +428,19 @@
             </div>
             <div>
                 <div class="section-header">THINKING WITH <span id="scout-status">READY</span></div>
-                <div class="panel-entry" id="scout-entry" title="Which AI model or agent is being used right now">Waiting for your first message.</div>
+                <div class="panel-entry" id="scout-entry" title="Which AI model or agent ${ASSISTANT_NAME} is using right now">Waiting for your first message.</div>
             </div>
             <div>
                 <div class="section-header">MEMORY <span>LIVE</span></div>
-                <div class="panel-entry" id="flux-status" title="How much of the assistant's short-term memory is in use — resets each session">0 of 20 messages remembered</div>
+                <div class="panel-entry" id="flux-status" title="How much of ${ASSISTANT_NAME}'s short-term memory is in use — resets each session">0 of 20 messages remembered</div>
             </div>
             <div>
                 <div class="section-header">LAST ROUTE <span>-</span></div>
-                <div class="panel-entry" id="last-route-entry" title="How the assistant decided to handle your last message">No requests yet.</div>
+                <div class="panel-entry" id="last-route-entry" title="How ${ASSISTANT_NAME} decided to handle your last message">No requests yet.</div>
             </div>
             <div>
                 <div class="section-header">MODE <span id="mode-indicator">NORMAL</span></div>
-                <div class="panel-entry" id="mode-entry" title="The assistant's current operating mode">All systems active.</div>
+                <div class="panel-entry" id="mode-entry" title="${ASSISTANT_NAME}'s current operating mode">All systems active.</div>
             </div>
         </div>
     </div>
@@ -450,36 +460,11 @@
                 <div class="pulse-ring"></div>
             </div>
         </div>
-        <div class="hint-text">SAY "HEY ASSISTANT" TO START TALKING — "TURN OFF VOICE MODE" TO STOP</div>
+        <div class="hint-text">SAY "hey ${assistantKey}" TO START TALKING — "TURN OFF VOICE MODE" TO STOP</div>
     </div>
 
     <script src="/three.min.js"></script>
     <script>
-        // ── Config — must match config.py ───────────────────────────
-        const ASSISTANT_NAME = "Jarvis";   // Change to match config.py
-        const USER_NAME      = "User";     // Change to match config.py
-        // Wake words are auto-generated from ASSISTANT_NAME — no need to edit these.
-        const _n = ASSISTANT_NAME.toLowerCase();
-        const WAKE_WORDS = [
-            `hey ${_n}`, `hi ${_n}`, `wake up ${_n}`, `ok ${_n}`, `okay ${_n}`,
-            `${_n} wake up`, `${_n} are you there`, `${_n} i need you`,
-            `${_n} listen`, `listen ${_n}`
-        ];
-        // ─────────────────────────────────────────────────────────────────
-
-        window.onload = () => {
-            // Inject configured names into the welcome card
-            document.getElementById('welcome-speaker').textContent = ASSISTANT_NAME;
-            const welcomeText = document.getElementById('welcome-card').childNodes[2];
-            if (welcomeText) welcomeText.textContent =
-                `Online and ready, ${USER_NAME}. Say "${WAKE_WORDS[0]}" to start talking, or type below.`;
-            // Update hint bar
-            const hintEl = document.querySelector('.hint-text');
-            if (hintEl) hintEl.textContent =
-                `SAY "${WAKE_WORDS[0].toUpperCase()}" TO START TALKING — "TURN OFF VOICE MODE" TO STOP`;
-            initSpaceScene();
-        };
-
         let scene, camera, renderer, starParticles, orbMesh, orbGlow;
         let recognition;
         
@@ -488,7 +473,7 @@
         let isServerProcessing = false;
         let isSpeaking = false;
 
-        // Stop audio only when the tab is closed — not when switching to another tab.
+        // Stop ${ASSISTANT_NAME} audio only when the tab is closed — not when switching to another tab.
         // beforeunload fires on close/navigate-away; pagehide is the mobile equivalent.
         window.addEventListener('beforeunload', () => {
             fetch('/api/stop_audio', { method: 'POST' }).catch(() => {});
@@ -538,7 +523,7 @@
 
                 // Phrases that signal a question mid-sentence
                 const questionPhrases = ["can you", "could you", "would you", "should i",
-                    "do you", `does ${ASSISTANT_NAME.toLowerCase()}`, "is there", "are there", "is it", "is this",
+                    "do you", "does ${ASSISTANT_NAME.toLowerCase()}", "is there", "are there", "is it", "is this",
                     "what is", "what are", "what's", "how do", "how does", "how can",
                     "how much", "how many", "why is", "why does", "why are",
                     "tell me", "explain", "show me"];
@@ -547,7 +532,7 @@
                 const isQuestion = questionStarters.includes(firstWord) ||
                     questionPhrases.some(p => lowerCorrected.startsWith(p)) ||
                     lowerCorrected.includes("?") ||
-                    (firstWord === ASSISTANT_NAME.toLowerCase() && questionStarters.includes(secondWord));
+                    (firstWord === ASSISTANT_NAME && questionStarters.includes(secondWord));
 
                 // Exclamation detection
                 const exclamationWords = ["stop", "yes", "no", "cancel", "abort",
@@ -581,6 +566,9 @@
             scene.add(starParticles);
 
             // ── Electron Cloud Particle Orb ──────────────────────────
+            // Replaces the solid sphere with a 3D particle system
+            // that forms an atom-like electron cloud shape.
+            // The core glows, outer particles orbit in randomised paths.
             const PARTICLE_COUNT  = 1800;
             const orbGeometry     = new THREE.BufferGeometry();
             const orbPositions    = new Float32Array(PARTICLE_COUNT * 3);
@@ -590,6 +578,7 @@
             const orbInclinations = new Float32Array(PARTICLE_COUNT);
 
             for (let i = 0; i < PARTICLE_COUNT; i++) {
+                // Distribute particles in shells like an electron cloud
                 const shell  = Math.random() < 0.3 ? 0.25 : Math.random() < 0.6 ? 0.55 : 0.85;
                 const radius = shell + (Math.random() - 0.5) * 0.18;
                 orbRadii[i]        = radius;
@@ -618,11 +607,13 @@
             }));
             scene.add(orbMesh);
 
+            // Soft core glow at the centre
             orbGlow = new THREE.Mesh(
                 new THREE.SphereGeometry(0.18, 24, 24),
                 new THREE.MeshBasicMaterial({ color: 0x2DD4A8, transparent: true, opacity: 0.55 })
             );
             scene.add(orbGlow);
+            // ─────────────────────────────────────────────────────────
 
             window.addEventListener('resize', onWindowResize);
             document.addEventListener('keydown', handleGlobalKeydown);
@@ -641,7 +632,7 @@
                 audioAnalyser.fftSize = 256;
                 audioDataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
                 sourceNode.connect(audioAnalyser);
-            }).catch(() => { console.log(" Acoustic analyzer standby."); });
+            }).catch(() => { console.log("⚠️ Acoustic analyzer standby."); });
         }
 
         function animateLoop() {
@@ -675,6 +666,7 @@
                 }
                 orbMesh.geometry.attributes.position.needsUpdate = true;
                 // Pulse particle colour with mic amplitude
+                const bright = 0.5 + liveMicrophoneAmplitude * 1.5;
                 orbMesh.material.opacity = Math.min(0.95, 0.7 + liveMicrophoneAmplitude * 0.5);
             }
 
@@ -716,52 +708,51 @@
                 const transcript = autoCorrectSpeechAndPunctuate(rawTranscript);
                 const transcriptLower = transcript.toLowerCase();
                 
-                console.log(" [Voice Core] Intercepted Raw Audio Token:", transcript);
+                console.log("🛰️ [Voice Core] Intercepted Raw Audio Token:", transcript);
 
-                if (isListeningMode) {
-                    // Voice-off commands
-                    if (transcriptLower.includes("microphone off") ||
-                        transcriptLower.includes("text mode only") ||
-                        transcriptLower.includes("turn microphone off") ||
-                        transcriptLower.includes("turn off voice mode") ||
-                        transcriptLower.includes("voice mode off")) {
-                        switchToAmbientMode();
-                        postCommandToBackend("turn off voice mode", 'voice');
-                        return;
-                    }
-                    postCommandToBackend(transcript, 'voice');
+                // Allow turning off voice mode by voice command
+                if (transcriptLower.includes("microphone off") ||
+                    transcriptLower.includes("text mode only") ||
+                    transcriptLower.includes("turn off voice mode") ||
+                    transcriptLower.includes("voice mode off")) {
+                    switchToAmbientMode();
+                    postCommandToBackend("turn off voice mode", 'voice');
+                    return;
                 }
-                else {
-                    // All wake phrases that activate voice mode
-                    const functionalTriggers = [
-                        ...WAKE_WORDS,
-                        "activate voice mode", "turn on microphone", "turn microphone on",
-                        "voice mode on", "voice mode", "start listening"
-                    ];
-                    let targetTriggerMatch = null;
-                    for (let trigger of functionalTriggers) {
-                        if (transcriptLower.includes(trigger)) {
-                            targetTriggerMatch = trigger;
+
+                // Check if the user referred to ${ASSISTANT_NAME}
+                const assistantKey = ASSISTANT_NAME;
+                if (transcriptLower.includes(assistantKey)) {
+                    const wakeWords = [`hey ${assistantKey}`, `hi ${assistantKey}`, `ok ${assistantKey}`, `okay ${assistantKey}`, assistantKey];
+                    let matchedWake = "";
+                    for (let w of wakeWords) {
+                        if (transcriptLower.includes(w)) {
+                            matchedWake = w;
                             break;
                         }
                     }
-
-                    if (targetTriggerMatch) {
-                        console.log(" [Voice Core] Wake verification matching anchor:", targetTriggerMatch);
-                        switchToActiveListeningMode();
-                        let triggerPosition = transcriptLower.indexOf(targetTriggerMatch) + targetTriggerMatch.length;
-                        let isolatedTrailingCommand = transcript.substring(triggerPosition).trim();
-                        
-                        if (isolatedTrailingCommand.length > 0) {
-                            postCommandToBackend(autoCorrectSpeechAndPunctuate(isolatedTrailingCommand), 'voice');
-                        } else {
-                            appendResponseCard(ASSISTANT_NAME, `Listening. Go ahead, ${USER_NAME}.`);
+                    
+                    let command = "";
+                    if (matchedWake) {
+                        let idx = transcriptLower.indexOf(matchedWake);
+                        command = transcript.substring(idx + matchedWake.length).trim();
+                        if (command.startsWith(",") || command.startsWith(".")) {
+                            command = command.substring(1).trim();
                         }
+                    } else {
+                        command = transcript;
                     }
+
+                    // If they just said "Hey Chronos" with nothing else, trigger a greeting response
+                    if (!command) {
+                        command = "hey " + assistantKey;
+                    }
+
+                    postCommandToBackend(command, 'voice');
                 }
             };
 
-            recognition.onerror = (e) => { console.warn(" [Voice Core] Tracking exception state ignored."); };
+            recognition.onerror = (e) => { console.warn("⚠️ [Voice Core] Tracking exception state ignored."); };
             recognition.onend = () => { if (shouldRunSpeechEngine && !isServerProcessing) { try { recognition.start(); } catch(err) {} } };
 
             if (shouldRunSpeechEngine) { try { recognition.start(); } catch(e) {} }
@@ -771,7 +762,7 @@
             shouldRunSpeechEngine = true;
             isListeningMode = true;
             if (audioContext && audioContext.state === 'suspended') audioContext.resume();
-            
+            if (recognition) { try { recognition.start(); } catch(e) {} }
             const btn = document.getElementById('master-mic-btn');
             const svgIcon = document.getElementById('mic-icon-svg');
             if (btn) btn.classList.add('active');
@@ -781,7 +772,8 @@
 
         function switchToAmbientMode() {
             isListeningMode = false;
-            shouldRunSpeechEngine = true;
+            shouldRunSpeechEngine = false;
+            if (recognition) { try { recognition.stop(); } catch(e) {} }
             const btn = document.getElementById('master-mic-btn');
             const svgIcon = document.getElementById('mic-icon-svg');
             if (btn) btn.classList.remove('active');
@@ -817,7 +809,7 @@
         function postCommandToBackend(payloadText, source) {
             isServerProcessing = true;
             updateSystemUIState("processing");
-            appendResponseCard(source === 'voice' ? "User (Voice)" : "User (Keyboard)", payloadText);
+            appendResponseCard(source === 'voice' ? "${USER_NAME} (Voice)" : "${USER_NAME} (Keyboard)", payloadText);
 
             document.getElementById('scout-status').innerText = "THINKING";
             document.getElementById('scout-entry').innerText = "Routing transaction package across local array nodes...";
@@ -856,7 +848,7 @@
                         focus:     ['FOCUS',     'Proactive interruptions blocked.'],
                         stealth:   ['STEALTH',   'No audio output — text only.'],
                         ghost:     ['GHOST',     'Nothing being logged this session.'],
-                        lockdown:  ['LOCKDOWN',  'Only responding to User.'],
+                        lockdown:  ['LOCKDOWN',  'Only responding to ${USER_NAME}.'],
                         red_alert: ['RED ALERT', 'Every action requires confirmation.'],
                         standdown: ['STAND DOWN','Background activity paused.'],
                     };
@@ -868,7 +860,7 @@
                 if (data.type === "wakeup") isListeningMode = true;
                 if (data.type === "shutdown") isListeningMode = false;
 
-                //  DUAL-LAYER FRONTEND NORMALIZER MATRIX FOR 6-SEAT BOARDROOM
+                // 🛠️ DUAL-LAYER FRONTEND NORMALIZER MATRIX FOR 6-SEAT BOARDROOM
                 if (data.type === 'council' || (data.response && typeof data.response === 'object')) {
                     let debate = data.response;
                     
@@ -1053,12 +1045,12 @@
 
                 if (shouldRunSpeechEngine) {
                     const checkAudioState = async () => {
-                        if (isServerProcessing) return; 
+                        if (isServerProcessing) return; // Wait for server to finish first
                         try {
                             const res = await fetch('/api/is_speaking');
                             const data = await res.json();
                             if (data.speaking) {
-                                setTimeout(checkAudioState, 500); 
+                                setTimeout(checkAudioState, 500); // Check again in 500ms
                             } else {
                                 if (shouldRunSpeechEngine) {
                                     try { recognition.start(); } catch(e) {}
@@ -1097,7 +1089,7 @@
                 <div style="font-family: monospace; font-size: 11px; line-height: 1.8; margin-top: 8px;">
                     Every message you send goes through Hermes — ${ASSISTANT_NAME}'s routing brain.<br>
                     Hermes reads your message and decides which engine should handle it:<br><br>
-                    <span style="color:#2DD4A8;">&#9654;</span> <b>Casual chat</b> &rarr; Fast model — replies in seconds<br>
+                    <span style="color:#2DD4A8;">&#9654;</span> <b>Casual chat</b> &rarr; Fast model (qwen3:1.7b) — replies in seconds<br>
                     <span style="color:#2DD4A8;">&#9654;</span> <b>Web search / live info</b> &rarr; Browser agent — opens a real browser tab invisibly<br>
                     <span style="color:#2DD4A8;">&#9654;</span> <b>Desktop commands</b> &rarr; Desktop agent — controls apps and files on your PC<br>
                     <span style="color:#2DD4A8;">&#9654;</span> <b>Brainstorming / decisions</b> &rarr; Council — 5 specialist AIs debate simultaneously,<br>
@@ -1152,18 +1144,72 @@
 
         function appendResponseCard(speaker, message, duration = null) {
             const stack = document.getElementById('response-stack');
-            const card = document.createElement('div');
+            const card  = document.createElement('div');
             card.className = 'response-card';
-            let durationMarkup = duration ? `<div style="font-size: 10px; opacity: 0.4; text-align: right; margin-top: 6px; font-family: monospace; letter-spacing: 0.05em;">LATENCY: ${duration}s</div>` : '';
-            card.innerHTML = `<div class="speaker-tag">${speaker}</div><div>${message}</div>${durationMarkup}`;
+            const durationMarkup = duration
+                ? `<div style="font-size:10px;opacity:0.4;text-align:right;margin-top:6px;font-family:monospace;letter-spacing:0.05em;">LATENCY: ${duration}s</div>`
+                : '';
+            
+            let formattedMessage = message;
+            if (typeof message === 'string' && message.length > 500) {
+                const preview = message.substring(0, 300);
+                const remaining = message.substring(300);
+                const uniqueId = 'collapse-' + Math.random().toString(36).substring(2, 9);
+                formattedMessage = `
+                    <span>${preview}</span><span id="${uniqueId}" style="display:none">${remaining}</span>
+                    <a href="#" onclick="event.preventDefault(); toggleTextCollapse(this, '${uniqueId}')" style="color:var(--accent-glow); margin-left: 5px; font-weight: bold; text-decoration: none; font-size: 10px; letter-spacing: 0.05em; display: inline-block; border: 1px solid var(--accent-glow); padding: 2px 6px; border-radius: 3px; margin-top: 5px;">SHOW MORE</a>
+                `;
+            }
+
+            const plainText = (typeof message === 'string')
+                ? message.replace(/<[^>]*>/g, '')
+                : JSON.stringify(message);
+
+            card.innerHTML = `
+                <div class="speaker-tag">${speaker.toUpperCase()}</div>
+                <div style="user-select:text; line-height: 1.6;">${formattedMessage}</div>
+                ${durationMarkup}
+                <button class="copy-btn" onclick="copyCardText(this, ${JSON.stringify(plainText)})">COPY</button>`;
             stack.appendChild(card);
-            stack.scrollTop = stack.scrollHeight; 
+            stack.scrollTop = stack.scrollHeight;
+        }
+
+        function toggleTextCollapse(link, targetId) {
+            const target = document.getElementById(targetId);
+            if (target.style.display === 'none') {
+                target.style.display = 'inline';
+                link.innerText = 'SHOW LESS';
+            } else {
+                target.style.display = 'none';
+                link.innerText = 'SHOW MORE';
+            }
+        }
+
+        function copyCardText(btn, text) {
+            navigator.clipboard.writeText(text).then(() => {
+                btn.innerText = 'COPIED';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.innerText = 'COPY';
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(() => {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                btn.innerText = 'COPIED';
+                btn.classList.add('copied');
+                setTimeout(() => { btn.innerText = 'COPY'; btn.classList.remove('copied'); }, 2000);
+            });
         }
 
         function togglePanel() { document.getElementById('activity-panel').classList.toggle('collapsed'); }
 
         window.onload = initSpaceScene;
-        
+        // Initialize clock
         function updateClock() {
             const now = new Date();
             const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });

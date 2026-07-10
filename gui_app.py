@@ -155,7 +155,7 @@ class VoiceAssistantGUI:
 
             messages = [
                 {"role": "system",
-                 "content": f"You are {ASSISTANT_NAME}, a warm, direct, brief personal assistant. Always address {USER_NAME} as 'sir'."}
+                 "content": f"You are {ASSISTANT_NAME}, a warm, direct, brief personal assistant. Always address {USER_NAME} as 'sir'. Use impeccable grammar, spelling, capitalization, and punctuation in your responses.."}
             ]
             messages.extend(self.chat_history)
             messages.append({"role": "user", "content": command})
