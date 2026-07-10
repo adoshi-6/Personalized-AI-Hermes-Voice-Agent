@@ -785,7 +785,6 @@
             shouldRunSpeechEngine = true;
             isListeningMode = true;
             if (audioContext && audioContext.state === 'suspended') audioContext.resume();
-            if (recognition) { try { recognition.start(); } catch(e) {} }
             const btn = document.getElementById('master-mic-btn');
             const svgIcon = document.getElementById('mic-icon-svg');
             if (btn) {
@@ -799,7 +798,6 @@
         function switchToAmbientMode() {
             isListeningMode = false;
             shouldRunSpeechEngine = true;
-            if (recognition) { try { recognition.start(); } catch(e) {} }
             const btn = document.getElementById('master-mic-btn');
             const svgIcon = document.getElementById('mic-icon-svg');
             if (btn) {
@@ -811,8 +809,10 @@
         }
 
         function toggleVoiceCapture() {
-            if (!isListeningMode) switchToActiveListeningMode();
-            else {
+            if (!isListeningMode) {
+                switchToActiveListeningMode();
+                try { recognition.start(); } catch(e) {}
+            } else {
                 switchToAmbientMode();
                 postCommandToBackend("turn off voice mode", 'voice');
             }
@@ -1100,13 +1100,18 @@
                     const data = await res.json();
                     failedAttempts = 0;
                     if (data.speaking) {
-                        setTimeout(checkAudioState, 500); // Check again in 500ms
+                        if (recognition) { try { recognition.stop(); } catch(e) {} }
+                        updateSystemUIState("muted");
+                        setTimeout(checkAudioState, 300); // Check again in 300ms
                     } else if (shouldRunSpeechEngine) {
+                        if (isListeningMode) {
+                            switchToActiveListeningMode();
+                        } else {
+                            switchToAmbientMode();
+                        }
                         try { recognition.start(); } catch(e) {}
                     }
                 } catch (e) {
-                    // Route unreachable — don't retry forever in silence; re-arm
-                    // the mic after a couple of misses so voice mode can't get stuck.
                     failedAttempts++;
                     if (failedAttempts >= 3) {
                         if (shouldRunSpeechEngine) { try { recognition.start(); } catch(e2) {} }
@@ -1115,7 +1120,7 @@
                     setTimeout(checkAudioState, 1000);
                 }
             };
-            setTimeout(checkAudioState, 500);
+            setTimeout(checkAudioState, 100);
         }
 
         // Instant local acknowledgement when only the wake word is spoken —

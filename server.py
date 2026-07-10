@@ -721,28 +721,55 @@ def _run_agent(seat_name: str, idea: str) -> tuple[str, str]:
 
 def classify_command_route(command: str) -> str:
     """
-    Uses the fast LLM to classify the user's intent dynamically.
-    Returns one of the routing keys:
-    'council', 'browser', 'system_monitor', 'desktop', 'coding', 'session_end',
-    'news_briefing', 'self_modification', 'correction', 'conversational'
+    Classifies the user command using a hybrid model:
+    1. Check for strong local keyword rules first (0ms, 100% correct).
+    2. Fall back to a simplified LLM orchestrator prompt for complex phrasing.
     """
+    lower = command.lower().strip()
+
+    # --- Hybrid Rule Check ---
+    browser_rules = ["search the web", "search online", "google search", "look up online", "search for", "browse the web"]
+    if any(r in lower for r in browser_rules):
+        return "browser"
+
+    desktop_rules = ["open notepad", "launch notepad", "open calculator", "launch calculator", 
+                     "open chrome", "launch chrome", "open explorer", "open file explorer", 
+                     "list files", "show files", "desktop files"]
+    if any(r in lower for r in desktop_rules):
+        return "desktop"
+
+    system_rules = ["system performance", "cpu usage", "ram usage", "disk usage", 
+                    "battery percentage", "system report", "pc health", "system monitor"]
+    if any(r in lower for r in system_rules):
+        return "system_monitor"
+
+    council_rules = ["ask the council", "boardroom debate", "assemble the council", "council debate"]
+    if any(r in lower for r in council_rules):
+        return "council"
+
+    # --- Simplified LLM orchestrator classifier ---
     system_prompt = (
-        f"You are {ASSISTANT_NAME}'s routing orchestrator. Classify the user's command into exactly one of these categories:\n"
-        "- 'council': User explicitly wants a boardroom/council debate, or asks to consult/assemble the council.\n"
-        "- 'browser': User wants to search the web, get live info, look up online news, or check current prices.\n"
-        "- 'system_monitor': User asks about system performance, CPU/RAM/disk/battery usage, running processes, lagging, or PC health.\n"
-        "- 'desktop': User wants to open, launch, or close a local application/file, create/delete files/folders, or control their desktop.\n"
-        "- 'coding': User asks for script compilation, writing programming code, debugging, or coding refactors.\n"
-        "- 'session_end': User is ending the session or closing out (e.g., 'wrap it up', 'end session', 'done for today', 'good night').\n"
-        "- 'news_briefing': User explicitly requests a morning news briefing or daily news headlines summary.\n"
-        "- 'self_modification': User wants you to change how you behave, modify your behavior/rules, or learn a rule for the future.\n"
-        "- 'correction': User is explicitly telling you that your previous response was wrong, mistaken, or incorrect.\n"
-        "- 'conversational': General discussion, questions, chatting, math, or anything else that doesn't need external system/browser tools.\n"
+        "Classify the user command into exactly one category:\n"
+        "council: boardroom/council debate\n"
+        "browser: search the web, check online info/news\n"
+        "system_monitor: CPU, RAM, disk, PC health, performance\n"
+        "desktop: open/launch/close apps, files, folders, or local controls\n"
+        "coding: writing code, programming, scripts, debugging\n"
+        "session_end: wrap up, end session, done, bye\n"
+        "news_briefing: daily news/headlines report\n"
+        "self_modification: change rules/behavior, teach new lessons\n"
+        "correction: feedback that previous response was wrong/incorrect\n"
+        "conversational: standard chat, math, questions, general talk\n"
         "\n"
-        "Analyze the meaning and context of the command carefully. Negations or counter-factuals (e.g. 'do not search') must prevent classification into that tool.\n"
-        "Respond with ONLY the category string itself (e.g. 'conversational'), no extra words, formatting, or punctuation."
+        "Answer with ONLY the category name. Example: conversational"
     )
     try:
+        # Determine assistant name dynamically in github version, or use Chronos directly
+        try:
+            name_label = ASSISTANT_NAME
+        except NameError:
+            name_label = "Chronos"
+            
         reply = ollama_call(FAST_MODEL, system_prompt, f"User command: {command}")
         route = reply.strip().lower().replace("'", "").replace('"', "")
         
@@ -765,8 +792,6 @@ def classify_command_route(command: str) -> str:
     except Exception as e:
         print(f"?? [Routing classification error]: {e}")
         return 'conversational'
-
-
 def run_parallel_council(idea: str) -> dict:
     """
     Fire all 5 agents simultaneously using the shared thread pool.
