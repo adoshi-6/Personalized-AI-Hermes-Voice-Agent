@@ -72,6 +72,7 @@
         #response-stack::-webkit-scrollbar-thumb:hover { background: var(--accent-glow, #2DD4A8); }
 
         .response-card {
+            user-select: text !important;
             width: 280px; background: rgba(22, 23, 29, 0.75); border-radius: 6px;
             border-top: 2px solid var(--accent-card-border, #2DD4A8); padding: 15px; font-size: 13px; line-height: 1.5;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5); flex-shrink: 0;
@@ -1029,7 +1030,6 @@
                         const stack = document.getElementById('response-stack');
                         const card = document.createElement('div');
                         card.className = 'response-card';
-                        const cleanMetricsText = `System Health Check\nCPU: ${m.cpu}\nRAM: ${m.ram}\nDisk: ${m.disk}\nBattery: ${m.battery}\nHeaviest processes: ${(m.top_procs || []).join(', ')}\nStartup programs: ${startupList}\n\n${data.response}`;
                         card.innerHTML = `
                             <div class="speaker-tag">System Health Check</div>
                             <div style="font-family: monospace; font-size: 11px; line-height: 1.9; margin-top: 8px;">
@@ -1043,8 +1043,7 @@
                             <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1);">
                                 ${data.response}
                             </div>
-                            <div style="font-size: 10px; opacity: 0.4; text-align: right; margin-top: 6px; font-family: monospace;">LATENCY: ${data.execution_time}s</div>
-                            <button class="copy-btn" onclick="copyCardText(this, ${JSON.stringify(cleanMetricsText)})">COPY</button>`;
+                            <div style="font-size: 10px; opacity: 0.4; text-align: right; margin-top: 6px; font-family: monospace;">LATENCY: ${data.execution_time}s</div>`;
                         stack.appendChild(card);
                         stack.scrollTop = stack.scrollHeight;
                     } else if (data.type === 'coding' || data.type === 'browser' || data.type === 'desktop') {
@@ -1058,8 +1057,7 @@
                             desktop: `Desktop Agent`,
                         };
                         let tagLabel = labelMap[data.type] || data.model;
-                        const cleanCodeText = data.response.replace(/```[a-z]*\n?/g, '');
-                        card.innerHTML = `<div class="speaker-tag">${tagLabel}</div><div>${cleanText}</div><div style="font-size: 10px; opacity: 0.4; text-align: right; margin-top: 6px; font-family: monospace; letter-spacing: 0.05em;">LATENCY: ${data.execution_time}s</div><button class="copy-btn" onclick="copyCardText(this, ${JSON.stringify(cleanCodeText)})">COPY</button>`;
+                        card.innerHTML = `<div class="speaker-tag">${tagLabel}</div><div>${cleanText}</div><div style="font-size: 10px; opacity: 0.4; text-align: right; margin-top: 6px; font-family: monospace; letter-spacing: 0.05em;">LATENCY: ${data.execution_time}s</div>`;
                         stack.appendChild(card);
                         stack.scrollTop = stack.scrollHeight;
                     } else {
@@ -1243,8 +1241,7 @@
             card.innerHTML = `
                 <div class="speaker-tag">${speaker.toUpperCase()}</div>
                 <div style="user-select:text; line-height: 1.6;">${formattedMessage}</div>
-                ${durationMarkup}
-                <button class="copy-btn" onclick="copyCardText(this, ${JSON.stringify(plainText)})">COPY</button>`;
+                ${durationMarkup}`;
             stack.appendChild(card);
             stack.scrollTop = stack.scrollHeight;
         }
@@ -1293,6 +1290,9 @@
         }
         setInterval(updateClock, 1000);
         updateClock();
+        window.addEventListener('beforeunload', () => {
+            navigator.sendBeacon('/api/stop_audio');
+        });
     </script>
 </body>
 </html>

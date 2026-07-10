@@ -868,7 +868,12 @@ def execute_browser_harness(user_query: str) -> str:
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
-            page    = browser.new_page()
+            context = browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                viewport={"width": 1280, "height": 720}
+            )
+            page    = context.new_page()
+            page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
             print(f"  Navigating -> {target_url}")
             page.goto(target_url, timeout=BROWSER_TIMEOUT * 1000)
             page.wait_for_load_state("domcontentloaded")
@@ -888,9 +893,42 @@ def execute_browser_harness(user_query: str) -> str:
 # DESKTOP ACCESS — files and apps on the user's machine
 #
 
+def focus_window(title_substring: str) -> bool:
+    import ctypes
+    EnumWindows = ctypes.windll.user32.EnumWindows
+    EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_int, ctypes.c_pointer)
+    GetWindowText = ctypes.windll.user32.GetWindowTextW
+    GetWindowTextLength = ctypes.windll.user32.GetWindowTextLengthW
+    IsWindowVisible = ctypes.windll.user32.IsWindowVisible
+    SetForegroundWindow = ctypes.windll.user32.SetForegroundWindow
+    ShowWindow = ctypes.windll.user32.ShowWindow
+
+    found_hwnd = []
+
+    def foreach_window(hwnd, lParam):
+        if IsWindowVisible(hwnd):
+            length = GetWindowTextLength(hwnd)
+            if length > 0:
+                buff = ctypes.create_unicode_buffer(length + 1)
+                GetWindowText(hwnd, buff, length + 1)
+                title = buff.value.lower()
+                if title_substring.lower() in title:
+                    found_hwnd.append(hwnd)
+                    return False # stop enumeration
+        return True
+
+    EnumWindows(EnumWindowsProc(foreach_window), 0)
+    if found_hwnd:
+        hwnd = found_hwnd[0]
+        ShowWindow(hwnd, 9) # Restore window if minimized
+        SetForegroundWindow(hwnd)
+        return True
+    return False
+
+
 def handle_desktop_command(command: str) -> str:
     """
-    Gives the assistant access to the user's desktop:
+    Gives access to Aryan's desktop:
     - Open applications (notepad, calculator, chrome, explorer)
     - List files on the desktop
     - Read a named file from the desktop
@@ -898,6 +936,19 @@ def handle_desktop_command(command: str) -> str:
     - Open a specific file with its default app
     """
     lower = command.lower()
+
+    # --- Advanced window management ---
+    if any(k in lower for k in ["focus", "bring to front", "maximize", "show window", "bring"]):
+        words = lower.split()
+        ignore = ["bring", "to", "the", "front", "of", "screen", "my", "focus", "show", "window", "app", "application", "please", "now"]
+        name_words = [w for w in words if w not in ignore]
+        if name_words:
+            app_name = name_words[0]
+            if focus_window(app_name):
+                return f"Brought {app_name} to the front."
+            else:
+                return f"Could not find any running window matching '{app_name}'."
+
 
     # --- App launching ---
     app_map = {
@@ -914,6 +965,19 @@ def handle_desktop_command(command: str) -> str:
                 return f"Launched {keyword}."
             except Exception as e:
                 return f"Couldn't launch {keyword}: {e}"
+
+    # General app launching fallback using Windows Shell start command!
+    if any(k in lower for k in ["open", "launch", "start"]):
+        words = lower.split()
+        ignore = ["open", "launch", "start", "the", "app", "application", "please", "app:"]
+        name_words = [w for w in words if w not in ignore]
+        if name_words:
+            app_name = name_words[0]
+            try:
+                subprocess.Popen(f"start {app_name}", shell=True)
+                return f"Launched {app_name}."
+            except Exception as e:
+                return f"Could not launch {app_name}: {e}""
 
     # --- List desktop files ---
     if any(kw in lower for kw in ["list files", "show files", "what's on my desktop", "files on desktop"]):
@@ -1514,3 +1578,11 @@ if __name__ == '__main__':
 @app.route('/api/is_speaking', methods=['GET'])
 def api_is_speaking():
     return jsonify({"speaking": is_speaking()})
+
+
+@app.route('/api/stop_audio', methods=['POST'])
+def stop_audio_endpoint():
+    """Immediately stops all TTS audio output."""
+    import audio_provider
+    audio_provider.stop_all_audio()
+    return jsonify({"status": "stopped"})
