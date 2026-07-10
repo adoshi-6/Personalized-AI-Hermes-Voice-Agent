@@ -720,30 +720,32 @@
                     return;
                 }
 
-                // Check if the user referred to ${ASSISTANT_NAME}
-                const assistantKey = ASSISTANT_NAME;
-                if (transcriptLower.includes(assistantKey)) {
-                    const wakeWords = [`hey ${assistantKey}`, `hi ${assistantKey}`, `ok ${assistantKey}`, `okay ${assistantKey}`, assistantKey];
-                    let matchedWake = "";
-                    for (let w of wakeWords) {
-                        if (transcriptLower.includes(w)) {
+                // Check if the user referred to the assistant (with phonetic spelling variations)
+                const nameKey = ASSISTANT_NAME.toLowerCase();
+                const wakePhrases = [
+                    `hey ${nameKey}`, `hi ${nameKey}`, `ok ${nameKey}`, `okay ${nameKey}`, nameKey,
+                    "hey chronos", "hi chronos", "ok chronos", "okay chronos", "chronos",
+                    "hey kronos", "hi kronos", "ok kronos", "okay kronos", "kronos",
+                    "hey ace", "hi ace", "ok ace", "okay ace", "ace",
+                    "a c h r o n o s"
+                ];
+                
+                let matchedWake = "";
+                for (let w of wakePhrases) {
+                    if (transcriptLower.includes(w)) {
+                        if (w.length > matchedWake.length) {
                             matchedWake = w;
-                            break;
                         }
                     }
-                    
-                    let command = "";
-                    if (matchedWake) {
-                        let idx = transcriptLower.indexOf(matchedWake);
-                        command = transcript.substring(idx + matchedWake.length).trim();
-                        command = command.replace(/^[.,\s!?]+|[.,\s!?]+$/g, "").trim();
-                    } else {
-                        command = transcript.replace(/^[.,\s!?]+|[.,\s!?]+$/g, "").trim();
-                    }
+                }
 
-                    // If they just said "Chronos" / "Hey Chronos" with nothing else,
+                if (matchedWake) {
+                    let idx = transcriptLower.indexOf(matchedWake);
+                    let command = transcript.substring(idx + matchedWake.length).trim();
+                    command = command.replace(/^[.,\s!?]+|[.,\s!?]+$/g, "").trim();
+
+                    // If they just said the wake word with nothing else,
                     // give an instant local ping instead of sending it to the LLM.
-                    // This is a straight TTS call — no server routing, no chat history entry.
                     if (!command) {
                         speakWakePing();
                         return;
