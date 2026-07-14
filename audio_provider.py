@@ -5,12 +5,22 @@ import os
 import ctypes
 import time
 import threading
+import uuid
+import glob
 
 # Global speaking lock — prevents two TTS calls overlapping.
 # speak_text blocks until audio finishes so /api/speak only returns
 # when Ace has truly finished speaking — which is what keeps the
 # frontend mic muted for exactly the right duration.
 _speak_lock = threading.Lock()
+_active_speech_threads = 0
+_counter_lock = threading.Lock()
+
+# Dedicated cache folder for generated speech clips. Using a fresh filename
+# per utterance (instead of one shared "ace_speech.mp3") is what fixes
+# the "audio randomly stops working" bug below.
+_AUDIO_CACHE_DIR = os.path.abspath("ace_audio_cache")
+os.makedirs(_AUDIO_CACHE_DIR, exist_ok=True)
 
 is_currently_speaking = False
 
@@ -19,34 +29,57 @@ def is_speaking():
     return is_currently_speaking or _speak_lock.locked()
 
 
-def _mci(command: str) -> bool:
-    try:
-        return ctypes.windll.winmm.mciSendStringW(command, None, 0, 0) == 0
-    except Exception:
-        return False
-
-
 def stop_all_audio():
     global is_currently_speaking
     is_currently_speaking = False
     _mci('close all')
 
 
+def _mci(command: str) -> bool:
+    """Runs a single MCI command. Never raises — returns True/False so
+    cleanup steps can always be attempted regardless of earlier failures."""
+    try:
+        return ctypes.windll.winmm.mciSendStringW(command, None, 0, 0) == 0
+    except Exception as e:
+        print(f"[MCI error on '{command}': {e}]")
+        return False
+
+
+def _cleanup_old_clips(keep_last: int = 5):
+    """Best-effort trim of old cached clips so the folder doesn't grow forever."""
+    try:
+        files = sorted(glob.glob(os.path.join(_AUDIO_CACHE_DIR, "*.mp3")), key=os.path.getmtime)
+        for stale in files[:-keep_last] if len(files) > keep_last else []:
+            try:
+                os.remove(stale)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
 def speak_text(text, voice_mode="standard"):
     """
-    Converts text to speech using the Ryan (UK) voice.
+    Converts text to speech using the Edge-TTS voice configured in config.py.
     Blocks until playback is fully complete (play wait).
     """
-    global is_currently_speaking
+    global is_currently_speaking, _active_speech_threads
     if not text or not text.strip():
-        is_currently_speaking = False
+        with _counter_lock:
+            if _active_speech_threads <= 0:
+                is_currently_speaking = False
         return
-
     # Prepend a small pause to let the audio hardware wake up without truncating the first words
-    text = "... " + text.lstrip('. ')
+    text = "... " + text.lstrip(". ")
 
-    is_currently_speaking = True
-    output_file = os.path.abspath("ace_speech.mp3")
+    with _counter_lock:
+        _active_speech_threads += 1
+        is_currently_speaking = True
+
+    clip_id = uuid.uuid4().hex
+    output_file = os.path.join(_AUDIO_CACHE_DIR, f"ace_{clip_id}.mp3")
+    alias = f"ace_audio_{clip_id[:8]}"
+    
     from config import VOICE_TAG
     selected_voice = VOICE_TAG
 
@@ -58,14 +91,31 @@ def speak_text(text, voice_mode="standard"):
         with _speak_lock:
             try:
                 asyncio.run(generate_speech())
-                _mci(f'open "{output_file}" type mpegvideo alias ace_audio')
-                # "play wait" blocks until playback is done — no polling loop needed
-                _mci('play ace_audio wait')
-                _mci('close ace_audio')
             except Exception as e:
-                print(f"[Audio pipeline error: {e}]")
+                print(f"[TTS generation error: {e}]")
+                return
+
+            try:
+                if not _mci(f'open "{output_file}" type mpegvideo alias {alias}'):
+                    print(f"[Audio pipeline error: could not open clip {clip_id}]")
+                    return
+                # "play wait" blocks until playback is done — no polling loop needed
+                _mci(f'play {alias} wait')
+            finally:
+                # Always release the device and delete the temp file, even if
+                # playback threw — this is exactly what was jamming later replies.
+                _mci(f'close {alias}')
+                try:
+                    os.remove(output_file)
+                except Exception:
+                    pass
+                _cleanup_old_clips()
     finally:
-        is_currently_speaking = False
+        with _counter_lock:
+            _active_speech_threads -= 1
+            if _active_speech_threads <= 0:
+                is_currently_speaking = False
+
 
 def listen_to_user():
     """Captures microphone audio with an expanded window for long sentences."""
@@ -77,7 +127,7 @@ def listen_to_user():
         recognizer.adjust_for_ambient_noise(source, duration=0.5)
         recognizer.energy_threshold = 300
         
-        print("\n [Listening... Speak now]")
+        print("\n🎙️ [Listening... Speak now]")
         try:
             audio_data = recognizer.listen(source, timeout=7, phrase_time_limit=None)
             print("Processing text...")

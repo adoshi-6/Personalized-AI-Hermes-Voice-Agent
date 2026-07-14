@@ -325,6 +325,75 @@ def strip_think(text: str) -> str:
     return re.sub(r'<think>[\s\S]*?</think>', '', text).strip()
 
 
+def stream_and_speak_sentences(messages: list, model: str, speak: bool = False) -> str:
+    """
+    Streams content from Ollama, extracts full sentences in real-time,
+    and speaks them immediately on background threads.
+    Accumulates and returns the full text response.
+    """
+    try:
+        response_stream = ollama.chat(model=model, messages=messages, stream=True)
+    except Exception as e:
+        print(f"❌ [Streaming failure]: {e}")
+        raise e
+
+    full_response = []
+    sentence_buffer = ""
+    in_think_block = False
+
+    for chunk in response_stream:
+        content_chunk = chunk['message']['content']
+        full_response.append(content_chunk)
+
+        if speak:
+            sentence_buffer += content_chunk
+
+            # Simple state parser to skip over reasoning block <think>...</think>
+            if "<think>" in sentence_buffer:
+                in_think_block = True
+                if "</think>" in sentence_buffer:
+                    parts = sentence_buffer.split("</think>", 1)
+                    sentence_buffer = parts[1]
+                    in_think_block = False
+                else:
+                    continue
+
+            if in_think_block:
+                continue
+
+            # Split on sentence boundaries: periods, question marks, exclamation marks, or double newlines
+            sentences = re.split(r'(?<=[.!?])\s+|\n\n', sentence_buffer)
+            if len(sentences) > 1:
+                # Speak all completed sentences
+                for sentence in sentences[:-1]:
+                    clean_s = sentence.strip()
+                    if clean_s:
+                        execute_audio_playback(clean_s)
+                # Keep the last incomplete fragment in the buffer
+                sentence_buffer = sentences[-1]
+
+    # Speak any remaining text left in the buffer at the end of the stream
+    if speak:
+        clean_remaining = sentence_buffer.strip()
+        if clean_remaining:
+            clean_remaining = strip_think(clean_remaining)
+            if clean_remaining:
+                execute_audio_playback(clean_remaining)
+
+    return "".join(full_response)
+
+
+def ollama_call_streaming(model: str, system: str, user: str, speak: bool = False) -> str:
+    """
+    Wrapper for streaming system prompts and user inputs dynamically.
+    """
+    messages = [
+        {"role": "system", "content": system},
+        {"role": "user",   "content": user},
+    ]
+    return stream_and_speak_sentences(messages, model, speak)
+
+
 def ollama_call(model: str, system: str, user: str) -> str:
     """
     Single Ollama call with consistent error handling.
@@ -380,9 +449,9 @@ def _run_audio(text: str):
 
 def execute_audio_playback(text: str):
     """Fire-and-forget TTS — returns immediately."""
-        import audio_provider
+    import audio_provider
     audio_provider.is_currently_speaking = True
-threading.Thread(target=_run_audio, args=(text,), daemon=True).start()
+    threading.Thread(target=_run_audio, args=(text,), daemon=True).start()
 
 
 #
@@ -1426,11 +1495,12 @@ def orchestrate_command_routing():
             "If the data does not contain an answer, say so plainly."
         )
         try:
-            reply = ollama_call(
+            reply = ollama_call_streaming(
                 SMART_MODEL, synthesis_system,
-                f"{USER_NAME} asked: {command}\n\nLive web data:\n{web_context}"
+                f"{USER_NAME} asked: {command}\n\nLive web data:\n{web_context}",
+                speak=(source == 'voice' and ACE_MODE != "stealth")
             )
-            return respond(reply, rtype="browser", model="hermes-browser", speak=True)
+            return respond(reply, rtype="browser", model="hermes-browser", speak=False)
         except Exception as e:
             return respond(f"Browser synthesis failed: {e}", rtype="browser")
 
@@ -1571,8 +1641,10 @@ def orchestrate_command_routing():
         messages.append({"role": "user", "content": command})
 
         try:
-            res   = ollama.chat(model=FAST_MODEL, messages=messages)
-            reply = strip_think(res['message']['content'])
+            reply = stream_and_speak_sentences(
+                messages, FAST_MODEL,
+                speak=(source == 'voice' and ACE_MODE != "stealth")
+            )
 
             chat_history.append({"role": "user",      "content": command})
             chat_history.append({"role": "assistant",  "content": reply})
@@ -1580,7 +1652,7 @@ def orchestrate_command_routing():
                 chat_history = chat_history[-20:]
             context_string = f"{len(chat_history)}/20 SLOTS"
 
-            return respond(reply, speak=True)
+            return respond(reply, speak=False)
         except Exception as e:
             return respond(f"Conversation pipeline dropped: {e}")
 
