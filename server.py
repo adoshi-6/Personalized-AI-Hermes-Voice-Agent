@@ -50,7 +50,7 @@ DESKTOP_PATH = DESKTOP_PATH
 # ============================================================
 # SECURITY CONFIG
 # ============================================================
-SECURITY_DIR      = "ace_security"
+SECURITY_DIR      = "chronos_security"
 PIN_FILE          = os.path.join(SECURITY_DIR, "pin.json")
 os.makedirs(SECURITY_DIR, exist_ok=True)
 
@@ -58,7 +58,7 @@ os.makedirs(SECURITY_DIR, exist_ok=True)
 
 # Current active mode — changes via code words
 # Modes: "normal", "safe", "focus", "stealth"
-ACE_MODE = "normal"
+CHRONOS_MODE = "normal"
 
 def _hash_pin(pin: str) -> str:
     """SHA-256 hash of the PIN — never store raw digits."""
@@ -105,7 +105,7 @@ pending_code_word         = None   # Holds a code word action waiting for PIN co
 # These files let the assistant learn from mistakes and evolve over time.
 # They are plain JSON — you can open and edit them any time.
 # ============================================================
-MEMORY_DIR       = "ace_memory"
+MEMORY_DIR       = "chronos_memory"
 MISTAKES_FILE    = os.path.join(MEMORY_DIR, "mistakes.json")
 CORRECTIONS_FILE = os.path.join(MEMORY_DIR, "corrections.json")
 SELF_EDITS_FILE  = os.path.join(MEMORY_DIR, "self_edits.json")
@@ -484,7 +484,7 @@ def execute_code_word(action_key: str) -> str:
     Execute a confirmed (PIN-verified) code word action.
     Returns a plain string reply to send back to the user.
     """
-    global ACE_MODE, chat_history
+    global CHRONOS_MODE, chat_history
 
     if action_key == "code_black":
         # Schedule server shutdown after response is sent
@@ -495,15 +495,15 @@ def execute_code_word(action_key: str) -> str:
         return "Code Black confirmed. Shutting down now."
 
     elif action_key == "safe_mode":
-        ACE_MODE = "safe"
+        CHRONOS_MODE = "safe"
         return "Safe Mode active. Internet and desktop access disabled. Chat only."
 
     elif action_key == "focus_mode":
-        ACE_MODE = "focus"
+        CHRONOS_MODE = "focus"
         return "Focus Mode active. All proactive interruptions blocked."
 
     elif action_key == "stealth_mode":
-        ACE_MODE = "stealth"
+        CHRONOS_MODE = "stealth"
         return "Stealth Mode active. No audio output. Text only."
 
     elif action_key == "briefing":
@@ -529,7 +529,7 @@ def execute_code_word(action_key: str) -> str:
             f"Mistakes logged: {len(mistakes)}.\n"
             f"Self-modifications approved: {len(edits)}. "
             f"Most recent: {chr(59).join(recent_edits) if recent_edits else 'None'}.\n"
-            f"Current mode: {ACE_MODE.upper()}."
+            f"Current mode: {CHRONOS_MODE.upper()}."
         )
 
         summary = ollama_call(
@@ -548,11 +548,11 @@ def execute_code_word(action_key: str) -> str:
         return "Factory reset complete. All memory wiped. Starting clean."
 
     elif action_key == "stand_down":
-        ACE_MODE = "standdown"
+        CHRONOS_MODE = "standdown"
         return "Standing down. Background activity paused. Still here if you need me."
 
     elif action_key == "ghost_mode":
-        ACE_MODE = "ghost"
+        CHRONOS_MODE = "ghost"
         return "Ghost Mode active. Nothing will be logged or remembered this session."
 
     elif action_key == "purge":
@@ -561,15 +561,15 @@ def execute_code_word(action_key: str) -> str:
         return f"Session purged. {count} exchanges cleared. Long-term memory intact."
 
     elif action_key == "lockdown":
-        ACE_MODE = "lockdown"
+        CHRONOS_MODE = "lockdown"
         return "Lockdown active. I will only respond to you saying your name or unlock phrase."
 
     elif action_key == "red_alert":
-        ACE_MODE = "red_alert"
+        CHRONOS_MODE = "red_alert"
         return "Red Alert active. Every action will require your confirmation."
 
     elif action_key == "handoff":
-        summary = f"Session summary — {len(chat_history)//2} exchanges. Mode: {ACE_MODE}. Lessons: {len(load_lessons())}."
+        summary = f"Session summary — {len(chat_history)//2} exchanges. Mode: {CHRONOS_MODE}. Lessons: {len(load_lessons())}."
         path = os.path.join(DESKTOP_PATH, "session_handoff.txt")
         try:
             with open(path, "w") as hf:
@@ -588,7 +588,7 @@ def execute_code_word(action_key: str) -> str:
         parts = [f"Since last session: {len(load_mistakes())} mistakes logged."]
         if recent:
             parts.append("Recent self-changes: " + "; ".join(recent))
-        parts.append(f"Current mode: {ACE_MODE}.")
+        parts.append(f"Current mode: {CHRONOS_MODE}.")
         return " ".join(parts)
 
     return f"Code word '{action_key}' recognised but not yet implemented."
@@ -1160,7 +1160,7 @@ def pin_status():
     """Frontend polls this on load to know if PIN setup is needed."""
     return jsonify({
         "pin_set": pin_is_set(),
-        "ace_mode": ACE_MODE,
+        "chronos_mode": CHRONOS_MODE,
     })
 
 
@@ -1169,8 +1169,8 @@ def stop_audio():
     """Kill audio immediately — called when browser tab loses focus."""
     try:
         import ctypes as _ct
-        _ct.windll.winmm.mciSendStringW('stop ace_audio', None, 0, 0)
-        _ct.windll.winmm.mciSendStringW('close ace_audio', None, 0, 0)
+        _ct.windll.winmm.mciSendStringW('stop chronos_audio', None, 0, 0)
+        _ct.windll.winmm.mciSendStringW('close chronos_audio', None, 0, 0)
     except Exception:
         pass
     return jsonify({"status": "stopped"})
@@ -1224,7 +1224,7 @@ def handle_isolated_playback():
 @app.route('/api/command', methods=['POST'])
 def orchestrate_command_routing():
     global chat_history, pending_memory_clear, interaction_session_counter, pending_self_modification
-    global pending_pin_action, pending_pin_setup, pending_code_word, ACE_MODE
+    global pending_pin_action, pending_pin_setup, pending_code_word, CHRONOS_MODE
     start_time = time.time()
 
     data    = request.get_json() or {}
@@ -1241,13 +1241,13 @@ def orchestrate_command_routing():
 
     def respond(reply, rtype="standard", model=FAST_MODEL, speak=False):
         """Helper to build a consistent response dict and optionally speak."""
-        if speak and source == 'voice' and ACE_MODE != "stealth":
+        if speak and source == 'voice' and CHRONOS_MODE != "stealth":
             execute_audio_playback(reply if isinstance(reply, str) else "Response ready.")
         return jsonify({
             "response":          reply,
             "type":              rtype,
             "model":             model,
-            "ace_mode":          ACE_MODE,
+            "chronos_mode":          CHRONOS_MODE,
             "interaction_count": interaction_session_counter,
             "context_loaded":    context_string,
             "execution_time":    round(time.time() - start_time, 2),
@@ -1278,16 +1278,16 @@ def orchestrate_command_routing():
         return respond(reply, speak=True)
 
     #  Stealth mode — no audio output
-    if ACE_MODE == "stealth":
+    if CHRONOS_MODE == "stealth":
         source = "text"   # Force text-only — no TTS fired regardless of source
 
     #  Lockdown mode — ignore everyone
-    if ACE_MODE == "lockdown":
+    if CHRONOS_MODE == "lockdown":
         unlock_phrases = UNLOCK_PHRASES
         if not any(p in lower_cmd for p in unlock_phrases):
             return respond("Lockdown active. Not responding.", speak=False)
         else:
-            ACE_MODE = "normal"
+            CHRONOS_MODE = "normal"
             return respond("Lockdown lifted. Welcome back, {USER_NAME}.", speak=True)
 
     #  Code word detection
@@ -1309,7 +1309,7 @@ def orchestrate_command_routing():
             action = pending_code_word
             pending_code_word = None
             result = execute_code_word(action)
-            return respond(result, speak=(ACE_MODE != "stealth"))
+            return respond(result, speak=(CHRONOS_MODE != "stealth"))
         else:
             pending_code_word = None
             reply = "Incorrect PIN. Code word action cancelled."
@@ -1424,9 +1424,9 @@ def orchestrate_command_routing():
         "disable lockdown", "exit lockdown",
         "cancel mode", "deactivate mode", "clear mode", "reset mode",
     ]
-    if any(phrase in lower_cmd for phrase in mode_off_phrases) and ACE_MODE != "normal":
-        old_mode = ACE_MODE
-        ACE_MODE = "normal"
+    if any(phrase in lower_cmd for phrase in mode_off_phrases) and CHRONOS_MODE != "normal":
+        old_mode = CHRONOS_MODE
+        CHRONOS_MODE = "normal"
         reply = f"{old_mode.replace('_', ' ').title()} deactivated. Back to normal."
         return respond(reply, speak=True)
 
@@ -1445,7 +1445,7 @@ def orchestrate_command_routing():
     print(f"🎯 [Hermes Orchestrator] Dynamic LLM Route: {route}")
 
     # ── Safe mode guard — block internet and desktop ─────────────────────
-    if ACE_MODE == "safe":
+    if CHRONOS_MODE == "safe":
         if route in ("browser", "desktop"):
             return respond(
                 "Safe Mode is active — internet and desktop access are disabled. "
@@ -1454,7 +1454,7 @@ def orchestrate_command_routing():
             )
 
     # ── Red alert guard — every action needs confirmation ─────────────────
-    if ACE_MODE == "red_alert" and not pending_pin_action:
+    if CHRONOS_MODE == "red_alert" and not pending_pin_action:
         pending_pin_action = {"command": command, "action": "red_alert_confirm"}
         return respond(
             "Red Alert is active. Enter your PIN to confirm this action.",
@@ -1498,7 +1498,7 @@ def orchestrate_command_routing():
             reply = ollama_call_streaming(
                 SMART_MODEL, synthesis_system,
                 f"{USER_NAME} asked: {command}\n\nLive web data:\n{web_context}",
-                speak=(source == 'voice' and ACE_MODE != "stealth")
+                speak=(source == 'voice' and CHRONOS_MODE != "stealth")
             )
             return respond(reply, rtype="browser", model="hermes-browser", speak=False)
         except Exception as e:
@@ -1643,7 +1643,7 @@ def orchestrate_command_routing():
         try:
             reply = stream_and_speak_sentences(
                 messages, FAST_MODEL,
-                speak=(source == 'voice' and ACE_MODE != "stealth")
+                speak=(source == 'voice' and CHRONOS_MODE != "stealth")
             )
 
             chat_history.append({"role": "user",      "content": command})

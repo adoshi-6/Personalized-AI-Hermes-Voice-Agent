@@ -44,3 +44,6 @@ ace_log.txt
 # OS noise
 .DS_Store
 Thumbs.db
+# Local Personal Configurations
+config.py
+chronos_audio_cache/

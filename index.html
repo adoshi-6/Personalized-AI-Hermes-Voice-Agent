@@ -879,7 +879,7 @@
                 document.getElementById('last-route-entry').innerText = routeMap[data.type] || `Direct chat via ${data.model}`;
 
                 // Update mode indicator if server returns one
-                if (data.ace_mode) {
+                if (data.chronos_mode) {
                     const modeLabels = {
                         normal:    ['NORMAL',    'All systems active.'],
                         safe:      ['SAFE MODE', 'Internet and desktop disabled.'],
@@ -890,7 +890,7 @@
                         red_alert: ['RED ALERT', 'Every action requires confirmation.'],
                         standdown: ['STAND DOWN','Background activity paused.'],
                     };
-                    const [label, desc] = modeLabels[data.ace_mode] || ['NORMAL', 'All systems active.'];
+                    const [label, desc] = modeLabels[data.chronos_mode] || ['NORMAL', 'All systems active.'];
                     document.getElementById('mode-indicator').innerText = label;
                     document.getElementById('mode-entry').innerText = desc;
                 }

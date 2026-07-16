@@ -10,14 +10,14 @@ import glob
 
 # Global speaking lock — prevents two TTS calls overlapping.
 # speak_text blocks until audio finishes so /api/speak only returns
-# when Ace has truly finished speaking — which is what keeps the
+# when Chronos has truly finished speaking — which is what keeps the
 # frontend mic muted for exactly the right duration.
 _speak_lock = threading.Lock()
 _active_speech_threads = 0
 _counter_lock = threading.Lock()
 
 # Dedicated cache folder for generated speech clips. Using a fresh filename
-# per utterance (instead of one shared "ace_speech.mp3") is what fixes
+# per utterance (instead of one shared "chronos_speech.mp3") is what fixes
 # the "audio randomly stops working" bug below.
 _AUDIO_CACHE_DIR = os.path.abspath("ace_audio_cache")
 os.makedirs(_AUDIO_CACHE_DIR, exist_ok=True)

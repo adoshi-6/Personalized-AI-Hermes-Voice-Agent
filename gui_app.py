@@ -42,7 +42,7 @@ class VoiceAssistantGUI:
 
         self.log_display.tag_config("sys",  foreground="#00ffcc")
         self.log_display.tag_config("user", foreground="#ffcc00")
-        self.log_display.tag_config("ace",  foreground="#ffffff")
+        self.log_display.tag_config("chronos",  foreground="#ffffff")
         self.log_display.tag_config("err",  foreground="#ff3333")
 
         self.input_frame = tk.Frame(root, bg="#121212")
@@ -132,11 +132,11 @@ class VoiceAssistantGUI:
             self.append_log("Running council debate...\n", "sys")
             debate_packet = run_council_debate(command)
 
-            self.append_log(f"\n[CONTRARIAN]:\n{debate_packet['contrarian']}\n", "ace")
+            self.append_log(f"\n[CONTRARIAN]:\n{debate_packet['contrarian']}\n", "chronos")
             speak_text("Contrarian analysis.")
             speak_text(debate_packet['contrarian'])
 
-            self.append_log(f"\n[SYNERGIST]:\n{debate_packet['synergist']}\n", "ace")
+            self.append_log(f"\n[SYNERGIST]:\n{debate_packet['synergist']}\n", "chronos")
             speak_text("Synergist strategy.")
             speak_text(debate_packet['synergist'])
 
@@ -163,7 +163,7 @@ class VoiceAssistantGUI:
             try:
                 response = ollama.chat(model=active_model, messages=messages)
                 reply    = response['message']['content']
-                self.append_log(f"{ASSISTANT_NAME}: {reply}\n", "ace")
+                self.append_log(f"{ASSISTANT_NAME}: {reply}\n", "chronos")
 
                 self.chat_history.append({"role": "user",      "content": command})
                 self.chat_history.append({"role": "assistant",  "content": reply})
