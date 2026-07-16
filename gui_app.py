@@ -40,7 +40,7 @@ class ChronosGUIApp:
         # Configure unique colored tagging text streams
         self.log_display.tag_config("sys", foreground="#00ffcc")   # Neon Teal System Alert
         self.log_display.tag_config("aryan", foreground="#ffcc00") # Amber Aryan Output
-        self.log_display.tag_config("chronos", foreground="#ffffff")   # Clean White Response
+        self.log_display.tag_config("CHRONOS", foreground="#ffffff")   # Clean White Response
         self.log_display.tag_config("err", foreground="#ff3333")   # Crimson Pipeline Failure
 
         # Bottom Input Dock Framework
@@ -65,7 +65,7 @@ class ChronosGUIApp:
         self.mic_btn.pack(side=tk.LEFT)
 
         # Print initial boot diagnostics to the log display window
-        self.append_log("🚀 Chronos Protocol Initialized. Standby for input connection...\n", "sys")
+        self.append_log("🚀 CHRONOS Protocol Initialized. Standby for input connection...\n", "sys")
         
         # Run standard startup greeting voice inside a safe non-blocking background thread
         threading.Thread(target=lambda: speak_text("System active, Aryan. Standing by."), daemon=True).start()
@@ -143,23 +143,23 @@ class ChronosGUIApp:
             # with keys: contrarian, first_principles, expansionist, outsider, executor, chairman
             debate_packet = run_council_debate(command)
 
-            self.append_log(f"\n🎭 [CONTRARIAN]:\n{debate_packet.get('contrarian', '')}\n", "chronos")
+            self.append_log(f"\n🎭 [CONTRARIAN]:\n{debate_packet.get('contrarian', '')}\n", "CHRONOS")
             speak_text("Contrarian analysis.")
             speak_text(debate_packet.get('contrarian', ''))
 
-            self.append_log(f"\n🔬 [FIRST PRINCIPLES]:\n{debate_packet.get('first_principles', '')}\n", "chronos")
+            self.append_log(f"\n🔬 [FIRST PRINCIPLES]:\n{debate_packet.get('first_principles', '')}\n", "CHRONOS")
             speak_text("First principles baseline.")
             speak_text(debate_packet.get('first_principles', ''))
 
-            self.append_log(f"\n🚀 [EXPANSIONIST]:\n{debate_packet.get('expansionist', '')}\n", "chronos")
+            self.append_log(f"\n🚀 [EXPANSIONIST]:\n{debate_packet.get('expansionist', '')}\n", "CHRONOS")
             speak_text("Expansionist strategy.")
             speak_text(debate_packet.get('expansionist', ''))
 
-            self.append_log(f"\n👁️ [OUTSIDER]:\n{debate_packet.get('outsider', '')}\n", "chronos")
+            self.append_log(f"\n👁️ [OUTSIDER]:\n{debate_packet.get('outsider', '')}\n", "CHRONOS")
             speak_text("Outsider perspective.")
             speak_text(debate_packet.get('outsider', ''))
 
-            self.append_log(f"\n⚡ [EXECUTOR]:\n{debate_packet.get('executor', '')}\n", "chronos")
+            self.append_log(f"\n⚡ [EXECUTOR]:\n{debate_packet.get('executor', '')}\n", "CHRONOS")
             speak_text("Executor directive.")
             speak_text(debate_packet.get('executor', ''))
 
@@ -179,7 +179,7 @@ class ChronosGUIApp:
                 self.append_log(f"⚡ Routing to Low-Latency Speed Engine ({active_model})...\n", "sys")
 
             messages_payload =[
-                {"role": "system", "content": "You are Chronos, an elite, highly intelligent desktop GUI AI assistant customized for Aryan. Always address him as 'sir'. Use impeccable grammar, spelling, capitalization, and punctuation in your responses."}
+                {"role": "system", "content": "You are CHRONOS, an elite, highly intelligent desktop GUI AI assistant customized for Aryan. Always address him as 'sir'. Use impeccable grammar, spelling, capitalization, and punctuation in your responses."}
             ]
             messages_payload.extend(self.chat_history)
             messages_payload.append({"role": "user", "content": command})
@@ -187,7 +187,7 @@ class ChronosGUIApp:
             try:
                 response = ollama.chat(model=active_model, messages=messages_payload)
                 reply = response['message']['content']
-                self.append_log(f"🤖 CHRONOS: {reply}\n", "chronos")
+                self.append_log(f"🤖 CHRONOS: {reply}\n", "CHRONOS")
                 
                 self.chat_history.append({"role": "user", "content": command})
                 self.chat_history.append({"role": "assistant", "content": reply})

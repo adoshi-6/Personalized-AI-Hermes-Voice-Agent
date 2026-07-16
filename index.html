@@ -414,7 +414,7 @@
             <div id="clock-display" style="font-size: 12px; font-family: monospace; color: rgba(255,255,255,0.6); margin-left: 20px; letter-spacing: 0.05em;"></div>
         </div>
         <div class="header-right">
-            <button class="ghost-btn" onclick="triggerMapModule()" title="Show system routing and agent layout">How Chronos Works</button>
+            <button class="ghost-btn" onclick="triggerMapModule()" title="Show system routing and agent layout">How CHRONOS Works</button>
             <button class="ghost-btn" onclick="triggerAlertsModule()" title="Show server and connection status">SYSTEM HEALTH</button>
             <div class="status-container">
                 <span id="system-status-text">ONLINE</span>
@@ -424,8 +424,8 @@
 
     <div id="response-stack">
         <div class="response-card" id="welcome-card">
-            <div class="speaker-tag">Chronos</div>
-            Online and ready, Aryan. Say "hey chronos" to start talking, or type below.
+            <div class="speaker-tag">CHRONOS</div>
+            Online and ready, Aryan. Say "hey CHRONOS" to start talking, or type below.
         </div>
     </div>
 
@@ -438,19 +438,19 @@
             </div>
             <div>
                 <div class="section-header">THINKING WITH <span id="scout-status">READY</span></div>
-                <div class="panel-entry" id="scout-entry" title="Which AI model or agent Chronos is using right now">Waiting for your first message.</div>
+                <div class="panel-entry" id="scout-entry" title="Which AI model or agent CHRONOS is using right now">Waiting for your first message.</div>
             </div>
             <div>
                 <div class="section-header">MEMORY <span>LIVE</span></div>
-                <div class="panel-entry" id="flux-status" title="How much of Chronos's short-term memory is in use — resets each session">0 of 20 messages remembered</div>
+                <div class="panel-entry" id="flux-status" title="How much of CHRONOS's short-term memory is in use — resets each session">0 of 20 messages remembered</div>
             </div>
             <div>
                 <div class="section-header">LAST ROUTE <span>-</span></div>
-                <div class="panel-entry" id="last-route-entry" title="How Chronos decided to handle your last message">No requests yet.</div>
+                <div class="panel-entry" id="last-route-entry" title="How CHRONOS decided to handle your last message">No requests yet.</div>
             </div>
             <div>
                 <div class="section-header">MODE <span id="mode-indicator">NORMAL</span></div>
-                <div class="panel-entry" id="mode-entry" title="Chronos's current operating mode">All systems active.</div>
+                <div class="panel-entry" id="mode-entry" title="CHRONOS's current operating mode">All systems active.</div>
             </div>
         </div>
     </div>
@@ -470,12 +470,12 @@
                 <div class="pulse-ring"></div>
             </div>
         </div>
-        <div class="hint-text">SAY "hey chronos" TO START TALKING — "TURN OFF VOICE MODE" TO STOP</div>
+        <div class="hint-text">SAY "hey CHRONOS" TO START TALKING — "TURN OFF VOICE MODE" TO STOP</div>
     </div>
 
     <script src="/three.min.js"></script>
     <script>
-        const ASSISTANT_NAME = "Chronos";
+        const ASSISTANT_NAME = "CHRONOS";
         const USER_NAME = "Aryan";
         let scene, camera, renderer, starParticles, orbMesh, orbGlow;
         let recognition;
@@ -485,7 +485,7 @@
         let isServerProcessing = false;
         let isSpeaking = false;
 
-        // Stop Chronos audio only when the tab is closed — not when switching to another tab.
+        // Stop CHRONOS audio only when the tab is closed — not when switching to another tab.
         // beforeunload fires on close/navigate-away; pagehide is the mobile equivalent.
         window.addEventListener('beforeunload', () => {
             fetch('/api/stop_audio', { method: 'POST' }).catch(() => {});
@@ -535,7 +535,7 @@
 
                 // Phrases that signal a question mid-sentence
                 const questionPhrases = ["can you", "could you", "would you", "should i",
-                    "do you", "does chronos", "is there", "are there", "is it", "is this",
+                    "do you", "does CHRONOS", "is there", "are there", "is it", "is this",
                     "what is", "what are", "what's", "how do", "how does", "how can",
                     "how much", "how many", "why is", "why does", "why are",
                     "tell me", "explain", "show me"];
@@ -727,8 +727,8 @@
                 const wakePhrases = [
                     `hey ${nameKey}`, `hi ${nameKey}`, `ok ${nameKey}`, `okay ${nameKey}`, nameKey
                 ];
-                // Support phonetic 'k' variant if configured name is 'chronos'
-                if (nameKey === 'chronos') {
+                // Support phonetic 'k' variant if configured name is 'CHRONOS'
+                if (nameKey === 'CHRONOS') {
                     wakePhrases.push("hey kronos", "hi kronos", "ok kronos", "okay kronos", "kronos");
                 }
                 let matchedWake = "";
@@ -842,8 +842,8 @@
             isServerProcessing = true;
             updateSystemUIState("processing");
             if (typeof payloadText === 'string') {
-                const pattern = ASSISTANT_NAME.toLowerCase() === 'chronos'
-                    ? "\\b(chronos|kronos)\\b"
+                const pattern = ASSISTANT_NAME.toLowerCase() === 'CHRONOS'
+                    ? "\\b(CHRONOS|kronos)\\b"
                     : "\\b" + ASSISTANT_NAME + "\\b";
                 const regex = new RegExp(pattern, 'gi');
                 payloadText = payloadText.replace(regex, ASSISTANT_NAME.toUpperCase());
@@ -881,7 +881,7 @@
                 document.getElementById('last-route-entry').innerText = routeMap[data.type] || `Direct chat via ${data.model}`;
 
                 // Update mode indicator if server returns one
-                if (data.ace_mode) {
+                if (data.CHRONOS_MODE) {
                     const modeLabels = {
                         normal:    ['NORMAL',    'All systems active.'],
                         safe:      ['SAFE MODE', 'Internet and desktop disabled.'],
@@ -892,7 +892,7 @@
                         red_alert: ['RED ALERT', 'Every action requires confirmation.'],
                         standdown: ['STAND DOWN','Background activity paused.'],
                     };
-                    const [label, desc] = modeLabels[data.ace_mode] || ['NORMAL', 'All systems active.'];
+                    const [label, desc] = modeLabels[data.CHRONOS_MODE] || ['NORMAL', 'All systems active.'];
                     document.getElementById('mode-indicator').innerText = label;
                     document.getElementById('mode-entry').innerText = desc;
                 }
@@ -1160,9 +1160,9 @@
             const card = document.createElement('div');
             card.className = 'response-card';
             card.innerHTML = `
-                <div class="speaker-tag">How Chronos Works</div>
+                <div class="speaker-tag">How CHRONOS Works</div>
                 <div style="font-family: monospace; font-size: 11px; line-height: 1.8; margin-top: 8px;">
-                    Every message you send goes through Hermes — Chronos's routing brain.<br>
+                    Every message you send goes through Hermes — CHRONOS's routing brain.<br>
                     Hermes reads your message and decides which engine should handle it:<br><br>
                     <span style="color:#2DD4A8;">&#9654;</span> <b>Casual chat</b> &rarr; Fast model (qwen3:1.7b) — replies in seconds<br>
                     <span style="color:#2DD4A8;">&#9654;</span> <b>Web search / live info</b> &rarr; Browser agent — opens a real browser tab invisibly<br>
@@ -1170,7 +1170,7 @@
                     <span style="color:#2DD4A8;">&#9654;</span> <b>Brainstorming / decisions</b> &rarr; Council — 5 specialist AIs debate simultaneously,<br>
                     &nbsp;&nbsp;&nbsp;then a Chairman gives one clear verdict<br>
                     <span style="color:#2DD4A8;">&#9654;</span> <b>Coding</b> &rarr; Coding agent (offline until GPU server arrives)<br><br>
-                    Voice: your microphone is muted while Chronos speaks so it never hears itself.
+                    Voice: your microphone is muted while CHRONOS speaks so it never hears itself.
                 </div>`;
             stack.appendChild(card);
             stack.scrollTop = stack.scrollHeight;

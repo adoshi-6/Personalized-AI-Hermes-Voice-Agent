@@ -4,17 +4,17 @@
 secrets.toml
 
 # Security files — PIN hash and code word config
-chronos_security/
+CHRONOS_SECURITY/
 
 # Self-learning memory — personal data
-chronos_memory/
+CHRONOS_MEMORY/
 
 # Conversation history — personal data
 conversation_history.json
 
 # Audio output files
-chronos_speech.mp3
-chronos_speech.wav
+CHRONOS_SPEECH.mp3
+CHRONOS_SPEECH.wav
 diagnostic_test.mp3
 *.mp3
 *.wav
@@ -39,11 +39,11 @@ env/
 
 # Logs
 logs/
-chronos_log.txt
+CHRONOS_LOG.txt
 
 # OS noise
 .DS_Store
 Thumbs.db
 # Local Personal Configurations
 config.py
-chronos_audio_cache/
+CHRONOS_AUDIO_CACHE/

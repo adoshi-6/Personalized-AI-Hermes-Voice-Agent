@@ -61,7 +61,7 @@ DESKTOP_PATH = r"C:\Users\Aryan\OneDrive\Desktop"
 # ============================================================
 # SECURITY CONFIG
 # ============================================================
-SECURITY_DIR      = "chronos_security"
+SECURITY_DIR      = "CHRONOS_SECURITY"
 PIN_FILE          = os.path.join(SECURITY_DIR, "pin.json")
 os.makedirs(SECURITY_DIR, exist_ok=True)
 
@@ -119,10 +119,10 @@ pending_code_word         = None   # Holds a code word action waiting for PIN co
 
 # ============================================================
 # SELF-LEARNING MEMORY FILES
-# These files let Chronos learn from mistakes and evolve over time.
+# These files let CHRONOS learn from mistakes and evolve over time.
 # They are plain JSON — you can open and edit them any time.
 # ============================================================
-MEMORY_DIR       = "chronos_memory"
+MEMORY_DIR       = "CHRONOS_MEMORY"
 MISTAKES_FILE    = os.path.join(MEMORY_DIR, "mistakes.json")
 CORRECTIONS_FILE = os.path.join(MEMORY_DIR, "corrections.json")
 SELF_EDITS_FILE  = os.path.join(MEMORY_DIR, "self_edits.json")
@@ -220,7 +220,7 @@ def build_system_advice(report: dict, user_query: str) -> str:
     )
 
     system_prompt = (
-        "You are Chronos, a personal AI assistant. Always address Aryan as 'sir'. Use impeccable grammar, spelling, capitalization, and punctuation in your responses. No emojis. No filler. "
+        "You are CHRONOS, a personal AI assistant. Always address Aryan as 'sir'. Use impeccable grammar, spelling, capitalization, and punctuation in your responses. No emojis. No filler. "
         "Address the user as 'sir' naturally. "
         "You have just run a live hardware scan. "
         "Give a direct assessment and specific actionable advice. "
@@ -305,7 +305,7 @@ def save_self_edit(description: str, change_type: str, detail: str, approved: bo
 def build_lessons_context() -> str:
     """
     Injects stored lessons and recent corrections into the system prompt
-    so Chronos walks into every conversation already knowing what not to repeat.
+    so CHRONOS walks into every conversation already knowing what not to repeat.
     """
     lessons     = load_lessons()
     corrections = load_corrections()
@@ -497,7 +497,7 @@ CODE_WORDS = {
     "lockdown":      ("lockdown",      "stop accepting input from anyone until you say the unlock phrase"),
     "red alert":     ("red_alert",     "every action requires confirmation regardless of type"),
     "handoff":       ("handoff",       "save a full session summary to your desktop then shut down"),
-    "debrief":       ("debrief",       "tell you everything Chronos did since you last checked in"),
+    "debrief":       ("debrief",       "tell you everything CHRONOS did since you last checked in"),
 }
 
 def detect_code_word(text: str) -> tuple[str, str] | None:
@@ -569,7 +569,7 @@ def execute_code_word(action_key: str) -> str:
 
         summary = ollama_call(
             FAST_MODEL,
-            "You are Chronos giving Aryan a concise briefing. No emojis. No filler. "
+            "You are CHRONOS giving Aryan a concise briefing. No emojis. No filler. "
             "Summarize what has happened this session, what you have learned, "
             "and what your current status is. Be direct and brief — 3 to 5 sentences max.",
             briefing_context
@@ -605,7 +605,7 @@ def execute_code_word(action_key: str) -> str:
 
     elif action_key == "handoff":
         summary = f"Session summary — {len(chat_history)//2} exchanges. Mode: {CHRONOS_MODE}. Lessons: {len(load_lessons())}."
-        path = os.path.join(DESKTOP_PATH, "chronos_handoff.txt")
+        path = os.path.join(DESKTOP_PATH, "CHRONOS_HANDOFF.txt")
         try:
             with open(path, "w") as hf:
                 hf.write(summary)
@@ -613,7 +613,7 @@ def execute_code_word(action_key: str) -> str:
                 time.sleep(1.5)
                 os.kill(os.getpid(), 9)
             threading.Thread(target=_shutdown, daemon=True).start()
-            return f"Handoff saved to chronos_handoff.txt on your desktop. Shutting down."
+            return f"Handoff saved to CHRONOS_HANDOFF.txt on your desktop. Shutting down."
         except Exception as e:
             return f"Handoff file write failed: {e}"
 
@@ -663,7 +663,7 @@ def should_trigger_browser(text: str) -> bool:
 
 
 def should_trigger_correction(text: str) -> bool:
-    """Detects when Aryan is telling Chronos it made a mistake."""
+    """Detects when Aryan is telling CHRONOS it made a mistake."""
     keywords = [
         "that was wrong", "you were wrong", "that's incorrect", "you made a mistake",
         "that's not right", "you got that wrong", "incorrect", "bad answer",
@@ -674,7 +674,7 @@ def should_trigger_correction(text: str) -> bool:
 
 
 def should_trigger_self_modification(text: str) -> bool:
-    """Detects when Aryan wants Chronos to change how it behaves or learn something."""
+    """Detects when Aryan wants CHRONOS to change how it behaves or learn something."""
     keywords = [
         "change yourself", "modify yourself", "update yourself", "alter yourself",
         "learn to", "remember to always", "remember to never", "from now on",
@@ -693,7 +693,7 @@ def build_self_modification_proposal(command: str) -> dict:
     """
     extraction = ollama_call(
         FAST_MODEL,
-        "You are Chronos. Aryan wants you to change something about how you behave. "
+        "You are CHRONOS. Aryan wants you to change something about how you behave. "
         "Extract and describe the proposed change. "
         "Respond ONLY as JSON: "
         '{"change_type": "behavior|tone|lesson|rule", '
@@ -738,7 +738,7 @@ def should_trigger_session_end(text: str) -> bool:
         "wrap it up", "end session", "that's all for today", "thats all for today",
         "i'm done for today", "im done for today", "shut it down for today",
         "call it a day", "we're done", "were done", "end of day",
-        "close out", "wrap up for today", "finish up", "good night chronos",
+        "close out", "wrap up for today", "finish up", "good night CHRONOS",
         "good night", "terminate session", "end the day",
     ]
     return any(p in text.lower() for p in phrases)
@@ -839,11 +839,11 @@ def classify_command_route(command: str) -> str:
         "Answer with ONLY the category name. Example: conversational"
     )
     try:
-        # Determine assistant name dynamically in github version, or use Chronos directly
+        # Determine assistant name dynamically in github version, or use CHRONOS directly
         try:
             name_label = ASSISTANT_NAME
         except NameError:
-            name_label = "Chronos"
+            name_label = "CHRONOS"
             
         reply = ollama_call(FAST_MODEL, system_prompt, f"User command: {command}")
         route = reply.strip().lower().replace("'", "").replace('"', "")
@@ -875,7 +875,7 @@ def classify_command_route(command: str) -> str:
 COUNCIL_AGENTS = {
     "contrarian": {
         "system": (
-            "You are The Contrarian on Chronos's advisory council. "
+            "You are The Contrarian on CHRONOS's advisory council. "
             "Your job: identify every critical risk, flaw, hidden cost, and reason this idea will fail. "
             "Be direct and ruthless. No fluff. Maximum 2 sentences. "
             "Do not begin with 'As a contrarian' or similar preamble."
@@ -884,7 +884,7 @@ COUNCIL_AGENTS = {
     },
     "first_principles": {
         "system": (
-            "You are the First Principles Thinker on Chronos's advisory council. "
+            "You are the First Principles Thinker on CHRONOS's advisory council. "
             "Strip every assumption and analogy. Rebuild the core logic from raw axioms only. "
             "Maximum 2 sentences. No preamble."
         ),
@@ -892,7 +892,7 @@ COUNCIL_AGENTS = {
     },
     "expansionist": {
         "system": (
-            "You are The Expansionist on Chronos's advisory council. "
+            "You are The Expansionist on CHRONOS's advisory council. "
             "Find the biggest hidden upside, scalability plays, and opportunities being missed. "
             "Maximum 2 sentences. No preamble."
         ),
@@ -900,7 +900,7 @@ COUNCIL_AGENTS = {
     },
     "outsider": {
         "system": (
-            "You are The Outsider on Chronos's advisory council. "
+            "You are The Outsider on CHRONOS's advisory council. "
             "Evaluate with complete objectivity. No jargon, no emotional attachment. "
             "Would this make sense to a smart person with no industry knowledge? "
             "Maximum 2 sentences. No preamble."
@@ -909,7 +909,7 @@ COUNCIL_AGENTS = {
     },
     "executor": {
         "system": (
-            "You are The Executor on Chronos's advisory council. "
+            "You are The Executor on CHRONOS's advisory council. "
             "Ignore theory. Focus only on execution. "
             "What is the single most concrete, actionable next step to take right now? "
             "Maximum 2 sentences. No preamble."
@@ -919,7 +919,7 @@ COUNCIL_AGENTS = {
 }
 
 CHAIRMAN_SYSTEM = (
-    "You are The Chairman of Chronos's advisory council. "
+    "You are The Chairman of CHRONOS's advisory council. "
     "You have received independent briefs from 5 specialist agents. "
     "Synthesize them into one clear, unified recommendation — the single best path forward. "
     "Be decisive. No hedging. Maximum 3 sentences."
@@ -1238,7 +1238,7 @@ def stop_audio():
 @app.route('/api/is_speaking', methods=['GET'])
 def check_is_speaking():
     """
-    Frontend polls this after every response to know when Chronos has
+    Frontend polls this after every response to know when CHRONOS has
     finished talking so it can safely re-arm the microphone. Without this
     route the frontend's restart-listening loop has nothing valid to poll
     and the mic never comes back on after the first reply.
@@ -1504,7 +1504,7 @@ def orchestrate_command_routing():
 
     # ── Voice control ───────────────────────────────────────────────────────
     if any(x in lower_cmd for x in ["turn microphone off", "microphone off", "voice mode off", "deactivate voice", "turn off voice mode", "turn off the microphone"]):
-        reply = "Entering standby. Say 'Hey Chronos' or 'activate voice mode' when you need me."
+        reply = "Entering standby. Say 'Hey CHRONOS' or 'activate voice mode' when you need me."
         return respond(reply, rtype="shutdown", speak=True)
 
     if any(x in lower_cmd for x in ["activate voice mode", "turn on microphone", "voice mode on"]):
@@ -1560,7 +1560,7 @@ def orchestrate_command_routing():
         print(f"🌐 [Hermes]: Browser harness active...")
         web_context = execute_browser_harness(command)
         synthesis_system = (
-            "You are Chronos, a personal AI assistant. Always address Aryan as 'sir'. Use impeccable grammar, spelling, capitalization, and punctuation in your responses. with live web access. "
+            "You are CHRONOS, a personal AI assistant. Always address Aryan as 'sir'. Use impeccable grammar, spelling, capitalization, and punctuation in your responses. with live web access. "
             "No emojis. No filler. Address the user as 'sir'. "
             "Summarize key facts from web data to answer directly. "
             "2 to 4 sentences. Skip ads and nav text. "
@@ -1623,7 +1623,7 @@ def orchestrate_command_routing():
     elif route == "coding":
         print(f"[Hermes]: Coding agent requested -> {CODING_MODEL}")
         coding_system = (
-            "You are Chronos's software engineering agent. No emojis. No filler. "
+            "You are CHRONOS's software engineering agent. No emojis. No filler. "
             "Address the user as 'sir' naturally. "
             "Provide clean, working code with the shortest necessary explanation. "
             "If fixing something, state what was wrong in one sentence first."
@@ -1660,7 +1660,7 @@ def orchestrate_command_routing():
         combined = "\n\n".join(all_context) if all_context else "No news data retrieved."
 
         news_system = (
-            "You are Chronos, a personal AI assistant. Always address Aryan as 'sir'. Use impeccable grammar, spelling, capitalization, and punctuation in your responses. delivering a morning news briefing. "
+            "You are CHRONOS, a personal AI assistant. Always address Aryan as 'sir'. Use impeccable grammar, spelling, capitalization, and punctuation in your responses. delivering a morning news briefing. "
             "No emojis. No filler. Address the user as 'sir'. "
             "Summarise the most important headlines from the data provided. "
             "Group by category if possible: world, US, tech. "
@@ -1676,8 +1676,8 @@ def orchestrate_command_routing():
 
     # ══════════════════════════════════════════════════════════════════════
     # CASE G — SELF-MODIFICATION REQUEST
-    # Aryan asks Chronos to change how it behaves, learn something, or fix itself.
-    # Chronos proposes the change, then waits for explicit approval before applying.
+    # Aryan asks CHRONOS to change how it behaves, learn something, or fix itself.
+    # CHRONOS proposes the change, then waits for explicit approval before applying.
     # ══════════════════════════════════════════════════════════════════════
     elif route == "self_modification":
         print(f"[Self-Modify]: Self-modification request detected.")
@@ -1708,7 +1708,7 @@ def orchestrate_command_routing():
 
     # ══════════════════════════════════════════════════════════════════════
     # CASE I — EXPLICIT CORRECTION ("that was wrong", "you made a mistake")
-    # Chronos logs the mistake and asks Aryan for the correct answer.
+    # CHRONOS logs the mistake and asks Aryan for the correct answer.
     # ══════════════════════════════════════════════════════════════════════
     elif route == "correction":
         print(f"[Self-Learn]: Correction signal detected.")
@@ -1719,7 +1719,7 @@ def orchestrate_command_routing():
         # Derive a lesson automatically
         lesson_text = ollama_call(
             FAST_MODEL,
-            "You are Chronos. Based on the mistake described, write one short lesson (1 sentence) "
+            "You are CHRONOS. Based on the mistake described, write one short lesson (1 sentence) "
             "that you should remember to avoid repeating this error. Start with 'Remember:'.",
             f"Mistake: {command}\nBad response was: {last_reply}"
         )
@@ -1740,7 +1740,7 @@ def orchestrate_command_routing():
         print(f"⚡ [Hermes]: Conversational route -> {FAST_MODEL}")
         lessons_ctx = build_lessons_context()
         chat_system = (
-            "You are Chronos, a personal AI assistant. Always address Aryan as 'sir'. Use impeccable grammar, spelling, capitalization, and punctuation in your responses. No emojis. No filler phrases. "
+            "You are CHRONOS, a personal AI assistant. Always address Aryan as 'sir'. Use impeccable grammar, spelling, capitalization, and punctuation in your responses. No emojis. No filler phrases. "
             "You have full capabilities to search the internet/web (via the browser harness) and execute commands/open applications on the user's desktop. Never claim that you cannot access the internet, browse the web, or control the desktop. "
             "Speak like a sharp, trusted friend — warm, direct, and brief. "
             "Address the user as 'sir' naturally in conversation. "

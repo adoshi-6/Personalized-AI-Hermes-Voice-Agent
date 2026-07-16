@@ -42,7 +42,7 @@ def handle_standard_chat(user_query):
         response = ollama.chat(
             model=active_model,
             messages=[
-                {"role": "system", "content": "You are Chronos, an elite, highly intelligent desktop AI assistant customized for Aryan. Always address him as 'sir'. Use impeccable grammar, spelling, capitalization, and punctuation in your responses."},
+                {"role": "system", "content": "You are CHRONOS, an elite, highly intelligent desktop AI assistant customized for Aryan. Always address him as 'sir'. Use impeccable grammar, spelling, capitalization, and punctuation in your responses."},
                 {"role": "user", "content": user_query}
             ]
         )
@@ -80,7 +80,7 @@ def main():
         # 🚪 THE SYSTEM EXIT DOOR
         # Intercepts the command before it ever touches the AI models
         if user_command.lower() in ["exit", "quit"]:
-            print("\n🚪 [Exiting Chronos Protocol. Disconnecting local nodes...]")
+            print("\n🚪 [Exiting CHRONOS Protocol. Disconnecting local nodes...]")
             speak_text("Systems shutting down. Goodbye, Aryan.")
             sys.exit(0)
             
