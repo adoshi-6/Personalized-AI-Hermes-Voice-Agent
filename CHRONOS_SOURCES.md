@@ -12,6 +12,7 @@
 | 2 | "BALL — The Fable 6 Setup" | Pasted by user (Google Doc) | ✅ Analyzed | Optimization blueprint for Claude Code/Desktop focusing on 4 pillars: global/local memory overrides (`CLAUDE.md`), auto-generating custom MCP servers, markdown-configured sub-agents (`.claude/agents/`), and post-tool lifecycle verification hooks (`settings.json`). Very high relevance to CHRONOS core architecture. |
 | 3 | "AI Email Agent Setup" — chrispathway (nanoclaw) | Pasted by user (Google Doc) | ✅ Analyzed | Nanoclaw email agent setup details: clones nanoclaw repo, runs background daemon, handles emails, routes summary to Telegram, drafts replies. Relevant for CHRONOS communication integrations (V1.2). |
 | 4 | "Agentic OS Using Fable 5" — RayCFu | Pasted by user (Google Doc) | ✅ Analyzed | Deep-dive guide for building an autonomous agentic loop: triage → conductor → implement → verify. Features a strict constitution (CLAUDE.md), permission gates (contract.md), a statistical trust ledger, and daily goal regression tests. Critical blueprint for CHRONOS V1.1 multi-agent council and self-learning loops. |
+| 5 | "Agentic_OS_Builders_Guide_Full" (Fable 5) | https://docs.google.com/document/d/1NfIe2ixwNHbXAQBDSeEGLzQEyibck9aeG2zyX7i1p20/edit?usp=sharing | ✅ Analyzed | A-Z breakdown on how to use Claude Fable 5 like a 100x engineer. Contains 8 builds/patterns for an Agentic OS. |
 
 ---
 
@@ -39,6 +40,12 @@
 | 10 | gstack (garrytan) | https://github.com/garrytan/gstack | ✅✅ High | CHRONOS Modes/Roles system (specialist AI role switching) |
 | 11 | graphify (Graphify-Labs) | https://github.com/Graphify-Labs/graphify | ✅ V1.3 | Structural knowledge graph of CHRONOS codebase |
 | 12 | system_prompts_leaks (asgeirtj) | https://github.com/asgeirtj/system_prompts_leaks | ✅✅ Now | Read Fable 5/6 + frontier prompt engineering patterns |
+| 13 | Website-downloader (AhmadIbrahiim) | https://github.com/AhmadIbrahiim/Website-downloader | ❌ Skip | Node.js website cloner; too heavy for search, keep for offline archiving only. |
+| 14 | crawl4ai (unclecode) | https://github.com/unclecode/crawl4ai | ✅✅ V1.2 | Async Python LLM-ready markdown extraction. Upgrade browser harness for cleaner search context. |
+| 15 | browser-use | https://github.com/browser-use/browser-use | ✅✅ V1.3 | Playwright-based agentic web navigation. Give CHRONOS dynamic browser actions (clicking, forms). |
+| 16 | Scrapling (D4Vinci) | https://github.com/D4Vinci/Scrapling | ✅ V1.2 | Stealth scraper to bypass Cloudflare/Turnstile bot blockages. |
+| 17 | curl-impersonate / curl_cffi | https://github.com/lwthiker/curl-impersonate | ✅ V1.2 | Spoof TLS fingerprints for fast, raw, browserless web scraping. |
+| 18 | colibri (JustVugg) | https://github.com/JustVugg/colibri | ✅ V1.4 | Pure C engine for running 744B MoE models via NVMe streaming. Good for background heavy-compute tasks. |
 
 ---
 
