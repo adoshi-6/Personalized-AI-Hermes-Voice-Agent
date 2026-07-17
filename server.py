@@ -1073,10 +1073,9 @@ def run_execution_loop(task: str) -> dict:
 
 def execute_browser_harness(user_query: str) -> str:
     """
-    Uses Playwright to scrape a DuckDuckGo search for live web context.
-    Falls back gracefully if the browser can't connect.
+    Uses Crawl4AI to scrape a Bing search for live web context in clean Markdown.
     """
-    print(f"🌐 [Browser Harness]: Query: '{user_query}'")
+    print(f"🌐 [Crawl4AI Browser]: Query: '{user_query}'")
 
     # Ask the fast model to extract clean search terms
     try:
@@ -1095,28 +1094,34 @@ def execute_browser_harness(user_query: str) -> str:
         else f"https://www.bing.com/search?q={target_search.replace(' ', '+')}"
     )
 
+    print(f"🛰️  Crawling -> {target_url}")
+    
     try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            context = browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                viewport={"width": 1280, "height": 720}
-            )
-            page    = context.new_page()
-            page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-            print(f"🛰️  Navigating -> {target_url}")
-            page.goto(target_url, timeout=BROWSER_TIMEOUT * 1000)
-            page.wait_for_load_state("networkidle")
-            raw_text    = page.inner_text("body")
-            clean_lines = [l.strip() for l in raw_text.splitlines() if l.strip()]
-            # Take first 60 lines — more context for better synthesis
-            scraped     = " ".join(clean_lines[:60])
-            browser.close()
-            print("✅ [Browser]: Context extracted.")
-            return scraped
+        import asyncio
+        from crawl4ai import AsyncWebCrawler
+        
+        async def _crawl(url):
+            async with AsyncWebCrawler() as crawler:
+                result = await crawler.arun(url=url)
+                return result.markdown
+
+        # Safely run the async crawl in Flask's sync context
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+        markdown_data = loop.run_until_complete(_crawl(target_url))
+        
+        # Take the first 3000 chars to avoid model context overflow
+        scraped = markdown_data[:3000]
+        print("✅ [Crawl4AI]: Markdown context extracted successfully.")
+        return scraped
+        
     except Exception as e:
-        print(f"❌ [Browser Failure]: {e}")
-        return f"Browser unavailable: {e}"
+        print(f"❌ [Crawl4AI Failure]: {e}")
+        return f"Browser crawl unavailable: {e}"
 
 
 # ─────────────────────────────────────────────────────────────
