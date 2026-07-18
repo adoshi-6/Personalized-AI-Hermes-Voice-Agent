@@ -2,27 +2,27 @@
 # config.py — User Configuration
 # =============================================================
 # This is the only file you need to edit before running the
-# assistant. Change the values below to match your setup.
+# system. Change the values below to match your setup.
 # Every other file in the project reads from here.
 # =============================================================
 
 # Server URL 
-# Point this to your Ollama server instance (local or remote).
+# Point this to your Model server instance (local or remote).
 OLLAMA_SERVER_URL = "http://localhost:11434"
 
 
 
 # Identity 
-# The name the assistant calls itself and responds to.
+# The name the system calls itself and responds to.
 ASSISTANT_NAME = "CHRONOS"
 
-# The name the assistant uses to address you.
+# The name the system uses to address you.
 USER_NAME = "User"
 
 # The default background color of the UI dashboard
 BACKGROUND_COLOR = "#0E0F13"
 
-# The core system prompt that defines the assistant's personality.
+# The core system prompt that defines the system's personality.
 # Placeholders like {ASSISTANT_NAME} and {USER_NAME} are supported and formatted dynamically.
 SYSTEM_PROMPT = (
   "You are {ASSISTANT_NAME}, {USER_NAME}'s personal AI assistant. "
@@ -34,9 +34,9 @@ SYSTEM_PROMPT = (
 )
 
 
-# AI Models 
-# These must be pulled in Ollama before running.
-# Example: run ollama pull qwen3:1.7b in your terminal.
+# ENGINE Models 
+# These must be pulled in Model server before running.
+# Example: run model server pull qwen3:1.7b in your terminal.
 FAST_MODEL = "qwen3:1.7b"   # Used for quick conversational replies
 SMART_MODEL = "qwen3:4b"    # Used for council debates and research
 
@@ -48,7 +48,7 @@ VOICE_TAG = "en-GB-RyanNeural"
 
 
 # Wake Word 
-# What you say to activate the assistant when in open-mic mode.
+# What you say to activate the system when in open-mic mode.
 WAKE_WORD = "hey CHRONOS"
 
 
@@ -62,7 +62,7 @@ DESKTOP_PATH = r"C:\Users\YourName\Desktop"
 
 
 # Council 
-# Keywords that trigger the multi-agent council debate.
+# Keywords that trigger the multi-node council debate.
 COUNCIL_TRIGGERS = ["council", "debate", "evaluate", "boardroom"]
 
 # Security 
@@ -84,7 +84,7 @@ PROTECTED_ACTIONS = [
 
 # Code words and what they do.
 # Format: "phrase you say" : ("internal_action_key", "description shown to you before PIN")
-# Change the phrases to anything you want — these are the words the assistant listens for.
+# Change the phrases to anything you want — these are the words the system listens for.
 # The action keys must stay exactly as they are (they map to internal logic).
 CODE_WORDS = {
   "shutdown now":  ("code_black",  "shut down everything immediately"),
@@ -103,5 +103,5 @@ CODE_WORDS = {
 }
 
 # Unlock phrases accepted during lockdown mode.
-# The assistant only responds to these when lockdown is active.
+# The system only responds to these when lockdown is active.
 UNLOCK_PHRASES = ["unlock", "i am the owner", "disengage lockdown"]

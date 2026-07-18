@@ -29,9 +29,9 @@ from playwright.sync_api import sync_playwright
 from audio_provider import speak_text, is_speaking
 
 # GPU Server Connection 
-# Point this at your Ollama server's Tailscale IP.
+# Point this at your Model server's Tailscale IP.
 # Change the IP below to match your server — find it with `tailscale ip` on the server.
-# Leave as localhost if running Ollama on this same machine.
+# Leave as localhost if running Model server on this same machine.
 OLLAMA_SERVER_URL = "http://100.88.1.86:11434"
 client = ollama.Client(host=OLLAMA_SERVER_URL)
 # 
@@ -325,15 +325,15 @@ def build_lessons_context() -> str:
   return ""
 
 # ============================================================
-# SHARED THREAD POOL — all parallel council agents use this
-# Limits total concurrent Ollama calls so the machine doesn't thrash
+# SHARED THREAD POOL — all parallel council nodes use this
+# Limits total concurrent Model server calls so the machine doesn't thrash
 # ============================================================
 COUNCIL_EXECUTOR = ThreadPoolExecutor(max_workers=6)
 
 # ============================================================
 # TIMEOUTS (seconds)
 # ============================================================
-AGENT_TIMEOUT  = 45  # Max wait per council agent before it's skipped
+AGENT_TIMEOUT  = 45  # Max wait per council node before it's skipped
 BROWSER_TIMEOUT = 12  # Max wait for a page to load
 
 
@@ -807,7 +807,7 @@ def classify_command_route(command: str) -> str:
   if any(r in lower for r in council_rules):
     return "council"
 
-  # Pre-classify conversational queries to bypass LLM routing overhead
+  # Pre-classify conversational queries to bypass ROUTER routing overhead
   action_keywords = [
     "open", "launch", "start", "run", "close", "kill",
     "search", "google", "look up", "lookup", "browse", "find",
@@ -822,7 +822,7 @@ def classify_command_route(command: str) -> str:
   if not any(k in lower for k in action_keywords):
     return 'conversational'
 
-  # --- Simplified LLM orchestrator classifier ---
+  # --- Simplified ROUTER orchestrator classifier ---
   system_prompt = (
     "Classify the user command into exactly one category:\n"
     "council: boardroom/council debate\n"
@@ -839,7 +839,7 @@ def classify_command_route(command: str) -> str:
     "Answer with ONLY the category name. Example: conversational"
   )
   try:
-    # Determine assistant name dynamically in github version, or use CHRONOS directly
+    # Determine system name dynamically in github version, or use CHRONOS directly
     try:
       name_label = ASSISTANT_NAME
     except NameError:
@@ -868,7 +868,7 @@ def classify_command_route(command: str) -> str:
     print(f"?? [Routing classification error]: {e}")
     return 'conversational'
 # 
-# PARALLEL COUNCIL — all 6 agents fire simultaneously
+# PARALLEL COUNCIL — all 6 nodes fire simultaneously
 # Chairman runs after they all finish (needs their output)
 # 
 
@@ -904,7 +904,7 @@ def run_parallel_council(idea: str) -> dict:
   print(f"\n [Hermes Council]: Firing 6 agents in parallel via {SMART_MODEL}...")
   results = {}
 
-  # Submit all 6 agents at once
+  # Submit all 6 nodes at once
   futures = {
     COUNCIL_EXECUTOR.submit(_run_agent, seat, idea): seat
     for seat in COUNCIL_AGENTS
@@ -1014,7 +1014,7 @@ def run_execution_loop(task: str) -> dict:
           worker_prompt += f"\nNote: Previous attempt failed. Verifier feedback: {current_feedback}. Adjust your answer accordingly."
         
         worker_sys = "You are a specialist worker on CHRONOS's council. Be precise and direct."
-        # Check if there is a custom agent prompt matching the worker name
+        # Check if there is a custom node prompt matching the worker name
         if worker in _council_data:
           worker_sys = _council_data[worker].get("system", worker_sys)
           
@@ -1628,7 +1628,7 @@ def orchestrate_command_routing():
 
   # 
   # CASE A — PARALLEL COUNCIL
-  # All 6 agents fire at the same time. Total wait ≈ slowest single agent.
+  # All 6 nodes fire at the same time. Total wait ≈ slowest single node.
   # 
   if route == "council":
     print(f" [Hermes]: Parallel council assembling...")
@@ -1729,7 +1729,7 @@ def orchestrate_command_routing():
     })
 
   # 
-  # CASE D2 — CODING AGENT (disabled — no model loaded)
+  # CASE D2 — CODING NODE (disabled — no model loaded)
   # Re-enable when GPU server arrives by setting CODING_MODEL above.
   # 
   elif route == "coding":
@@ -1829,7 +1829,7 @@ def orchestrate_command_routing():
   # 
   elif route == "correction":
     print(f"[Self-Learn]: Correction signal detected.")
-    # Find the last assistant reply to log as the bad response
+    # Find the last system reply to log as the bad response
     last_reply  = next((m["content"] for m in reversed(chat_history) if m["role"] == "assistant"), "unknown")
     last_command = next((m["content"] for m in reversed(chat_history) if m["role"] == "user"), "unknown")
     save_mistake(last_command, last_reply, command)

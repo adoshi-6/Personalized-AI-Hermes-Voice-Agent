@@ -3,7 +3,7 @@ import re
 
 # ==================================================
 # MODEL SELECTION
-# Set this to the model you have pulled in Ollama.
+# Set this to the model you have pulled in Model server.
 # ==================================================
 LOCAL_MODEL = "qwen3:4b"  # Updated — qwen2.5-coder removed, use smart model
 

@@ -335,7 +335,7 @@
     <div id="council-title">Council Chamber — 6-Agent Parallel Deliberation Active</div>
 
     <div id="council-arena">
-      <!-- SVG lines from Chairman to each agent -->
+      <!-- SVG lines from Chairman to each node -->
       <svg id="council-svg" viewBox="0 0 520 520">
         <line id="line-contrarian"   class="council-line" style="--line-color:#FF453A"/>
         <line id="line-first_principles" class="council-line" style="--line-color:#FF9500"/>
@@ -345,7 +345,7 @@
         <line id="line-rainmaker"    class="council-line" style="--line-color:#FFD700"/>
       </svg>
 
-      <!-- The six agent orbs — positioned in a hexagon around Chairman -->
+      <!-- The six node orbs — positioned in a hexagon around Chairman -->
       <div class="agent-orb" id="orb-contrarian"
         style="--orb-light:#FF6B64;--orb-dark:#8B1A15;--orb-border:#FF453A;--orb-glow:rgba(255,69,58,0.5);--orb-glow-far:rgba(255,69,58,0.15);
         top:14px; left:50%; transform:translateX(-50%);">
@@ -1130,7 +1130,7 @@
       }
     }
 
-    // Polls /api/is_speaking and re-arms the mic the moment the assistant
+    // Polls /api/is_speaking and re-arms the mic the moment the system
     // finishes talking. Shared by normal replies and the wake-word ping,
     // so the mic never stays muted longer than the audio actually plays.
     function resumeListeningWhenDoneSpeaking() {
@@ -1167,7 +1167,7 @@
     }
 
     // Instant local acknowledgement when only the wake word is spoken —
-    // no backend/LLM round trip, just a TTS ping so you know it's ready.
+    // no backend/ROUTER round trip, just a TTS ping so you know it's ready.
     async function speakWakePing() {
       isServerProcessing = false;
       if (recognition) { try { recognition.stop(); } catch(e) {} }

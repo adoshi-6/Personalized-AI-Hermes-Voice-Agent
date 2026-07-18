@@ -2,11 +2,11 @@ from openai import OpenAI
 from tools import TOOL_DEFINITIONS
 from config import SMART_MODEL
 
-# Uses the OpenAI-compatible API that Ollama exposes on port 11434.
+# Uses the OpenAI-compatible API that Model server exposes on port 11434.
 # This lets us use the standard OpenAI SDK to talk to local models.
 client = OpenAI(
   base_url="http://localhost:11434/v1",
-  api_key="ollama"  # Ollama requires any non-empty string here
+  api_key="ollama"  # Model server requires any non-empty string here
 )
 
 
