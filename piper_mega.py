@@ -12,20 +12,20 @@ from config import USER_NAME, ASSISTANT_NAME
 # Set your chosen voice in config.py after auditioning.
 PIPER_GLOBAL_VOICES = [
  # American voices
- {"name": "Ryan (US - Balanced Male)", "voice": "ryan",  "code": "en_US", "quality": "medium"},
- {"name": "Ryan (US - High Definition Male)", "voice": "ryan",  "code": "en_US", "quality": "high"},
+ {"name": "Ryan (US - Balanced Male)", "voice": "ryan", "code": "en_US", "quality": "medium"},
+ {"name": "Ryan (US - High Definition Male)", "voice": "ryan", "code": "en_US", "quality": "high"},
  {"name": "Lessac (US - Articulate Male)", "voice": "lessac", "code": "en_US", "quality": "medium"},
  {"name": "Lessac (US - High Definition Male)", "voice": "lessac", "code": "en_US", "quality": "high"},
- {"name": "Amy (US - Natural Female)", "voice": "amy",  "code": "en_US", "quality": "medium"},
- {"name": "Joe (US - Friendly Male)", "voice": "joe",  "code": "en_US", "quality": "medium"},
+ {"name": "Amy (US - Natural Female)", "voice": "amy", "code": "en_US", "quality": "medium"},
+ {"name": "Joe (US - Friendly Male)", "voice": "joe", "code": "en_US", "quality": "medium"},
  {"name": "Kristin (US - Crisp Female)", "voice": "kristin", "code": "en_US", "quality": "medium"},
  {"name": "Linda (US - Narrative Female)", "voice": "linda", "code": "en_US", "quality": "medium"},
  # British voices
- {"name": "Alan (UK - Sophisticated Male)", "voice": "alan",  "code": "en_GB", "quality": "medium"},
- {"name": "Alba (UK - Modern Female)", "voice": "alba",  "code": "en_GB", "quality": "medium"},
+ {"name": "Alan (UK - Sophisticated Male)", "voice": "alan", "code": "en_GB", "quality": "medium"},
+ {"name": "Alba (UK - Modern Female)", "voice": "alba", "code": "en_GB", "quality": "medium"},
  {"name": "Jenny (UK - Conversational Female)", "voice": "jenny", "code": "en_GB", "quality": "medium"},
  {"name": "Northern English Male (UK)", "voice": "northern_english_male","code": "en_GB", "quality": "medium"},
- {"name": "VCTK (UK - Corporate Male)", "voice": "vctk",  "code": "en_GB", "quality": "medium"},
+ {"name": "VCTK (UK - Corporate Male)", "voice": "vctk", "code": "en_GB", "quality": "medium"},
 ]
 
 MODEL_DIR = os.path.abspath("piper_voices")

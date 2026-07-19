@@ -1527,6 +1527,28 @@ def respond_permission_request():
   return jsonify({"error": "Request ID not found or already processed"}), 404
 
 
+# CRM API Endpoints 
+@app.route('/api/crm/leads', methods=['GET'])
+def get_crm_leads_data():
+  try:
+    from crm_engine import get_leads
+    status_filter = request.args.get('status', default=None, type=str)
+    leads = get_leads(status_filter)
+    return jsonify({"leads": leads})
+  except Exception as e:
+    return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/crm/appointments', methods=['GET'])
+def get_crm_appointments_data():
+  try:
+    from crm_engine import get_upcoming_appointments
+    appointments = get_upcoming_appointments()
+    return jsonify({"appointments": appointments})
+  except Exception as e:
+    return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/command', methods=['POST'])
 def orchestrate_command_routing():
   global chat_history, pending_memory_clear, interaction_session_counter, pending_self_modification

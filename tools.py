@@ -88,6 +88,53 @@ TOOL_DEFINITIONS = [
         "required": ["action", "filename"]
       }
     }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "add_crm_lead",
+      "description": "Adds a new business/client lead to the CRM database.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string", "description": "Client full name"},
+          "email": {"type": "string", "description": "Client email address"},
+          "phone": {"type": "string", "description": "Client phone number"},
+          "notes": {"type": "string", "description": "Initial inquiry notes or details"}
+        },
+        "required": ["name"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "schedule_crm_appointment",
+      "description": "Schedules a business appointment or booking for a client lead.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": {"type": "string", "description": "Appointment title or service requested"},
+          "start_time": {"type": "string", "description": "ISO date string or human date time for appointment"},
+          "lead_id": {"type": "integer", "description": "Optional lead ID from CRM"},
+          "notes": {"type": "string", "description": "Appointment notes"}
+        },
+        "required": ["title", "start_time"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_crm_leads",
+      "description": "Retrieves active business leads from the CRM database.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "status_filter": {"type": "string", "description": "Filter by status: NEW, CONTACTED, APPOINTMENT_SET, CLOSED"}
+        }
+      }
+    }
   }
 ]
 
@@ -192,5 +239,14 @@ def execute_tool(name, arguments_json):
   elif name == "get_current_time": return get_current_time()
   elif name == "manage_desktop_file":
     return manage_desktop_file(args.get("action"), args.get("filename"), args.get("content", ""))
+  elif name == "add_crm_lead":
+    from crm_engine import add_lead
+    return json.dumps(add_lead(args.get("name"), args.get("email", ""), args.get("phone", ""), args.get("notes", "")))
+  elif name == "schedule_crm_appointment":
+    from crm_engine import schedule_appointment
+    return json.dumps(schedule_appointment(args.get("title"), args.get("start_time"), args.get("lead_id"), args.get("notes", "")))
+  elif name == "get_crm_leads":
+    from crm_engine import get_leads
+    return json.dumps(get_leads(args.get("status_filter")))
   else:
     return f"Error: Tool '{name}' is unknown."

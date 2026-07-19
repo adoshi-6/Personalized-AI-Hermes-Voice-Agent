@@ -12,11 +12,11 @@ def _chat(prompt_system: str, prompt_user: str) -> str:
  """Single call to the local model. Strips <think> blocks from reasoning models."""
  try:
  response = ollama.chat(
-  model=LOCAL_MODEL,
-  messages=[
-  {"role": "system", "content": prompt_system},
-  {"role": "user", "content": prompt_user},
-  ]
+ model=LOCAL_MODEL,
+ messages=[
+ {"role": "system", "content": prompt_system},
+ {"role": "user", "content": prompt_user},
+ ]
  )
  raw = response['message']['content']
  # Strip reasoning blocks emitted by deepseek/qwen thinking models

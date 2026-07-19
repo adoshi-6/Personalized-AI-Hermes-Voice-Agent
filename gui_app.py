@@ -91,8 +91,8 @@ class VoiceAssistantGUI:
  for neg in negations:
  if neg in text_lower:
  for kw in COUNCIL_TRIGGERS:
-  if kw in text_lower and text_lower.find(neg) < text_lower.find(kw):
-  return False
+ if kw in text_lower and text_lower.find(neg) < text_lower.find(kw):
+ return False
  return True
 
  def process_text_input(self):
@@ -155,7 +155,7 @@ class VoiceAssistantGUI:
 
  messages = [
  {"role": "system",
-  "content": f"You are {ASSISTANT_NAME}, a warm, direct, brief personal assistant. Always address {USER_NAME} as 'sir'. Use impeccable grammar, spelling, capitalization, and punctuation in your responses.."}
+ "content": f"You are {ASSISTANT_NAME}, a warm, direct, brief personal assistant. Always address {USER_NAME} as 'sir'. Use impeccable grammar, spelling, capitalization, and punctuation in your responses.."}
  ]
  messages.extend(self.chat_history)
  messages.append({"role": "user", "content": command})
@@ -168,7 +168,7 @@ class VoiceAssistantGUI:
  self.chat_history.append({"role": "user", "content": command})
  self.chat_history.append({"role": "assistant", "content": reply})
  if len(self.chat_history) > 20:
-  self.chat_history = self.chat_history[-20:]
+ self.chat_history = self.chat_history[-20:]
 
  speak_text(reply)
  except Exception as e:
