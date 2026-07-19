@@ -59,5 +59,7 @@ walkthrough.md
 # Personal & Business Private Profiles
 profiles/personal.json
 profiles/business.json
+profiles/client_demo.json
 ui/personal/
 ui/business/
+ui/client_demo/
