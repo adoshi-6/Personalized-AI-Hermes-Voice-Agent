@@ -22,10 +22,10 @@ def generate_response(conversation_history: list, system_prompt: str):
 
  try:
  response = client.chat.completions.create(
-  model=SMART_MODEL,
-  messages=messages,
-  tools=TOOL_DEFINITIONS,
-  stream=True,
+ model=SMART_MODEL,
+ messages=messages,
+ tools=TOOL_DEFINITIONS,
+ stream=True,
  )
  return response
  except Exception as e:

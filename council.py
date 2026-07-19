@@ -11,18 +11,18 @@ LOCAL_MODEL = "qwen3:4b" # Updated — qwen2.5-coder removed, use smart model
 def _chat(prompt_system: str, prompt_user: str) -> str:
  """Single call to the local model. Strips <think> blocks from reasoning models."""
  try:
-  response = ollama.chat(
-   model=LOCAL_MODEL,
-   messages=[
-    {"role": "system", "content": prompt_system},
-    {"role": "user", "content": prompt_user},
-   ]
-  )
-  raw = response['message']['content']
-  # Strip reasoning blocks emitted by deepseek/qwen thinking models
-  return re.sub(r'<think>[\s\S]*?</think>', '', raw).strip()
+ response = ollama.chat(
+  model=LOCAL_MODEL,
+  messages=[
+  {"role": "system", "content": prompt_system},
+  {"role": "user", "content": prompt_user},
+  ]
+ )
+ raw = response['message']['content']
+ # Strip reasoning blocks emitted by deepseek/qwen thinking models
+ return re.sub(r'<think>[\s\S]*?</think>', '', raw).strip()
  except Exception as e:
-  return f"[Agent unavailable: {e}]"
+ return f"[Agent unavailable: {e}]"
 
 
 def run_council_debate(user_idea: str) -> dict:
@@ -30,20 +30,20 @@ def run_council_debate(user_idea: str) -> dict:
  Runs a full 7-seat council debate on the user's idea.
 
  Returns a dict with keys:
-  contrarian, first_principles, expansionist, outsider, executor, rainmaker, chairman
+ contrarian, first_principles, expansionist, outsider, executor, rainmaker, chairman
 
  BUG FIX (v2): previously returned a plain string, which caused KeyError
  crashes in gui_app.py and main.py whenever council was triggered.
  """
  print("\n==================================================")
- print(" COUNCIL CHAMBER ACTIVE: INITIATING DEBATE  ")
+ print(" COUNCIL CHAMBER ACTIVE: INITIATING DEBATE ")
  print("==================================================")
 
  import json
  import os
  config_path = os.path.join(os.path.dirname(__file__), "council_config.json")
  with open(config_path, "r", encoding="utf-8") as f:
-  config = json.load(f)
+ config = json.load(f)
 
  # --- Seat 1: The Contrarian ---
  print("\n[1/7] The Contrarian...")
@@ -78,27 +78,27 @@ def run_council_debate(user_idea: str) -> dict:
  # --- Seat 7: The Chairman ---
  print("[7/7] The Chairman (synthesis)...")
  chairman_context = config["chairman"]["prompt"].format(
-  idea=user_idea,
-  contrarian=text1,
-  first_principles=text2,
-  expansionist=text3,
-  outsider=text4,
-  executor=text5,
-  rainmaker=text6
+ idea=user_idea,
+ contrarian=text1,
+ first_principles=text2,
+ expansionist=text3,
+ outsider=text4,
+ executor=text5,
+ rainmaker=text6
  )
  text7 = _chat(config["chairman"]["system"], chairman_context)
  print(" done.")
 
  print("\n==================================================")
- print(" DEBATE COMPLETE. RETURNING VERDICT PACKET.  ")
+ print(" DEBATE COMPLETE. RETURNING VERDICT PACKET. ")
  print("==================================================\n")
 
  return {
-  "contrarian":  text1,
-  "first_principles": text2,
-  "expansionist": text3,
-  "outsider":  text4,
-  "executor":  text5,
-  "rainmaker":  text6,
-  "chairman":  text7,
+ "contrarian": text1,
+ "first_principles": text2,
+ "expansionist": text3,
+ "outsider": text4,
+ "executor": text5,
+ "rainmaker": text6,
+ "chairman": text7,
  }

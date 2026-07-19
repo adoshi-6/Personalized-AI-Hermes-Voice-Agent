@@ -15,8 +15,8 @@ async def main():
  print("==================================================")
 
  for v in voices:
-  if v['ShortName'].startswith("en-"):
-  print(f" Code: {v['ShortName']:<35} Gender: {v['Gender']}")
+ if v['ShortName'].startswith("en-"):
+ print(f" Code: {v['ShortName']:<35} Gender: {v['Gender']}")
 
  print("==================================================\n")
  print(" Copy your preferred code and set it as VOICE_TAG in config.py")

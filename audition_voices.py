@@ -10,11 +10,11 @@ from config import USER_NAME, ASSISTANT_NAME
 # After running this script, set your preferred voice in config.py under VOICE_TAG.
 TEST_VOICES = {
  "Brian (US - Corporate & Crisp)": "en-US-BrianNeural",
- "Andrew (US - Deep & Casual)":  "en-US-AndrewNeural",
+ "Andrew (US - Deep & Casual)": "en-US-AndrewNeural",
  "Christopher (US - Young & Articulate)": "en-US-ChristopherNeural",
- "Ava (US - Modern Female)":  "en-US-AvaNeural",
+ "Ava (US - Modern Female)": "en-US-AvaNeural",
  "Emma (US - Soft & Calm Female)": "en-US-EmmaNeural",
- "Ryan (UK - Cinematic British)":  "en-GB-RyanNeural",
+ "Ryan (UK - Cinematic British)": "en-GB-RyanNeural",
  "Sonia (UK - Polished British Female)": "en-GB-SoniaNeural",
 }
 
@@ -32,7 +32,7 @@ def play_audio(file_path):
  while True:
  ctypes.windll.winmm.mciSendStringW(f'status {alias} mode', status, 255, 0)
  if status.value != 'playing':
-  break
+ break
  time.sleep(0.1)
 
  ctypes.windll.winmm.mciSendStringW(f'close {alias}', None, 0, 0)
@@ -52,25 +52,25 @@ async def run_audition():
 
  print(f"Playing: {nickname}...")
  sample_text = (
-  f"Hello {USER_NAME}. This is the {nickname.split('(')[0].strip()} "
-  f"voice profile. How do I sound as the voice of {ASSISTANT_NAME}?"
+ f"Hello {USER_NAME}. This is the {nickname.split('(')[0].strip()} "
+ f"voice profile. How do I sound as the voice of {ASSISTANT_NAME}?"
  )
 
  try:
-  communicate = edge_tts.Communicate(sample_text, voice_tag)
-  await communicate.save(unique_file)
-  play_audio(unique_file)
-  time.sleep(0.8)
+ communicate = edge_tts.Communicate(sample_text, voice_tag)
+ await communicate.save(unique_file)
+ play_audio(unique_file)
+ time.sleep(0.8)
  except Exception as e:
-  print(f"[Failed to process {nickname}: {e}]")
+ print(f"[Failed to process {nickname}: {e}]")
 
  print("\nCleaning up audio files...")
  for f in generated_files:
  if os.path.exists(f):
-  try:
-  os.remove(f)
-  except Exception:
-  pass
+ try:
+ os.remove(f)
+ except Exception:
+ pass
 
  print("\n==================================================")
  print(" Auditions complete. Set your choice in config.py")

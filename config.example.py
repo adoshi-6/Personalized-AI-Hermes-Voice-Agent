@@ -99,7 +99,7 @@ CODE_WORDS = {
  "factory reset": ("factory_reset", "wipe ALL memory — cannot be undone"),
  "stand down": ("stand_down", "pause all background activity"),
  "ghost mode": ("ghost_mode", "stop logging anything this session"),
- "purge session": ("purge",  "clear this session only, keep long-term memory"),
+ "purge session": ("purge", "clear this session only, keep long-term memory"),
  "lockdown": ("lockdown", "stop responding to anyone until unlocked"),
  "high alert": ("red_alert", "require confirmation before every action"),
  "save and quit": ("handoff", "save a session summary to desktop then shut down"),

@@ -11,11 +11,11 @@ from config import USER_NAME, ASSISTANT_NAME
 # Set your final choice in config.py under VOICE_TAG.
 SHORTLIST_VOICES = [
  {"name": "Liam (Canada - Smooth & Grounded)", "tag": "en-CA-LiamNeural"},
- {"name": "Ryan (UK - Deep Cinematic)",  "tag": "en-GB-RyanNeural"},
+ {"name": "Ryan (UK - Deep Cinematic)", "tag": "en-GB-RyanNeural"},
  {"name": "James (Philippines - Clear & Articulate)", "tag": "en-PH-JamesNeural"},
- {"name": "Wayne (Singapore - Dynamic)",  "tag": "en-SG-WayneNeural"},
- {"name": "Andrew (US - Deep Casual)",  "tag": "en-US-AndrewNeural"},
- {"name": "Eric (US - Sharp & Clear)",  "tag": "en-US-EricNeural"},
+ {"name": "Wayne (Singapore - Dynamic)", "tag": "en-SG-WayneNeural"},
+ {"name": "Andrew (US - Deep Casual)", "tag": "en-US-AndrewNeural"},
+ {"name": "Eric (US - Sharp & Clear)", "tag": "en-US-EricNeural"},
 ]
 
 
@@ -32,7 +32,7 @@ def play_audio(file_path):
  while True:
  ctypes.windll.winmm.mciSendStringW(f'status {alias} mode', status, 255, 0)
  if status.value != 'playing':
-  break
+ break
  time.sleep(0.1)
 
  ctypes.windll.winmm.mciSendStringW(f'close {alias}', None, 0, 0)
@@ -51,32 +51,32 @@ async def main():
  print(f" Tag: {speaker['tag']}")
 
  sample_text = (
-  f"Hello {USER_NAME}. Testing the {speaker['name'].split('(')[0].strip()} "
-  f"voice for {ASSISTANT_NAME}. How do I sound?"
+ f"Hello {USER_NAME}. Testing the {speaker['name'].split('(')[0].strip()} "
+ f"voice for {ASSISTANT_NAME}. How do I sound?"
  )
  safe_filename = f"shortlist_sample_{idx}.mp3"
 
  if not os.path.exists(safe_filename):
-  communicate = edge_tts.Communicate(sample_text, speaker['tag'])
-  await communicate.save(safe_filename)
+ communicate = edge_tts.Communicate(sample_text, speaker['tag'])
+ await communicate.save(safe_filename)
 
  play_audio(safe_filename)
 
  action = input("[ENTER] replay | 'n' next | 'q' quit: ").strip().lower()
 
  if action == 'q':
-  break
+ break
  elif action == 'n':
-  idx += 1
+ idx += 1
 
  print("\nCleaning up...")
  for i in range(len(SHORTLIST_VOICES)):
  f = f"shortlist_sample_{i}.mp3"
  if os.path.exists(f):
-  try:
-  os.remove(f)
-  except Exception:
-  pass
+ try:
+ os.remove(f)
+ except Exception:
+ pass
 
  print("\n==================================================")
  print(" Review complete. Set your choice in config.py")

@@ -28,6 +28,17 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeou
 from playwright.sync_api import sync_playwright
 from audio_provider import speak_text, is_speaking
 
+# Trust Ledger Import 
+try:
+  from trust_ledger import log_event, get_recent_logs, get_audit_summary
+except ImportError:
+  def log_event(*args, **kwargs): pass
+  def get_recent_logs(*args, **kwargs): return []
+  def get_audit_summary(*args, **kwargs): return {}
+
+PENDING_GATE_REQUESTS = {}
+gate_request_counter = 0
+
 # Load Dotenv 
 try:
   from dotenv import load_dotenv
@@ -1484,6 +1495,38 @@ def handle_isolated_playback():
   return jsonify({"status": "vocalization_complete"})
 
 
+# Trust Ledger & Permission Gate Endpoints 
+@app.route('/api/trust_ledger', methods=['GET'])
+def get_trust_ledger_data():
+  limit = request.args.get('limit', default=50, type=int)
+  profile = request.args.get('profile', default=None, type=str)
+  logs = get_recent_logs(limit=limit, profile=profile)
+  summary = get_audit_summary()
+  return jsonify({"summary": summary, "logs": logs})
+
+
+@app.route('/api/permission_gate/pending', methods=['GET'])
+def get_pending_permission_requests():
+  return jsonify({"pending_requests": list(PENDING_GATE_REQUESTS.values())})
+
+
+@app.route('/api/permission_gate/respond', methods=['POST'])
+def respond_permission_request():
+  data = request.get_json() or {}
+  req_id = data.get("request_id")
+  decision = data.get("decision", "").lower().strip()
+  
+  if req_id in PENDING_GATE_REQUESTS:
+    gate_req = PENDING_GATE_REQUESTS.pop(req_id)
+    action_name = gate_req.get("action", "unknown")
+    
+    status_str = "APPROVED" if decision == "approve" else "DENIED"
+    log_event("PERMISSION_GATE", action_name, status_str, {"decision": decision, "request_id": req_id}, ACTIVE_PROFILE)
+    return jsonify({"status": status_str, "request_id": req_id})
+    
+  return jsonify({"error": "Request ID not found or already processed"}), 404
+
+
 @app.route('/api/command', methods=['POST'])
 def orchestrate_command_routing():
   global chat_history, pending_memory_clear, interaction_session_counter, pending_self_modification
@@ -1499,6 +1542,7 @@ def orchestrate_command_routing():
 
   interaction_session_counter += 1
   print(f"\n [{source.upper()}] #{interaction_session_counter}: \"{command}\"")
+  log_event("USER_COMMAND", command, "RECEIVED", {"source": source}, ACTIVE_PROFILE)
   lower_cmd   = command.lower()
   context_string = f"{len(chat_history)}/20 SLOTS"
 

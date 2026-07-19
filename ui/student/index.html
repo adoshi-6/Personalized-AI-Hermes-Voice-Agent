@@ -1,188 +1,188 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CHRONOS STEM Tutor</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #131314;
-      color: #e3e3e3;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-    header {
-      background-color: #1e1e1f;
-      padding: 15px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #2d2d2e;
-    }
-    h1 {
-      margin: 0;
-      font-size: 20px;
-      color: #c58af9;
-      font-weight: 500;
-    }
-    .container {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-    }
-    .sidebar {
-      width: 250px;
-      background-color: #1e1e1f;
-      border-right: 1px solid #2d2d2e;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-    .main-chat {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      background-color: #131314;
-    }
-    .chat-history {
-      flex: 1;
-      padding: 20px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-    .message {
-      max-width: 75%;
-      padding: 12px 16px;
-      border-radius: 8px;
-      line-height: 1.5;
-    }
-    .user-message {
-      background-color: #2b2b2c;
-      align-self: flex-end;
-      border-bottom-right-radius: 2px;
-    }
-    .tutor-message {
-      background-color: #1e1e1f;
-      align-self: flex-start;
-      border-bottom-left-radius: 2px;
-      border: 1px solid #2d2d2e;
-    }
-    .input-panel {
-      padding: 20px;
-      background-color: #1e1e1f;
-      border-top: 1px solid #2d2d2e;
-      display: flex;
-      gap: 10px;
-    }
-    input[type="text"] {
-      flex: 1;
-      background-color: #131314;
-      border: 1px solid #2d2d2e;
-      border-radius: 6px;
-      color: #fff;
-      padding: 12px;
-      font-size: 15px;
-      outline: none;
-    }
-    input[type="text"]:focus {
-      border-color: #c58af9;
-    }
-    button {
-      background-color: #c58af9;
-      color: #131314;
-      border: none;
-      padding: 0 24px;
-      border-radius: 6px;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.2s;
-    }
-    button:hover {
-      opacity: 0.9;
-    }
-    .status-badge {
-      background-color: rgba(197, 138, 249, 0.1);
-      color: #c58af9;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      align-self: flex-start;
-      border: 1px solid rgba(197, 138, 249, 0.2);
-    }
-  </style>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>CHRONOS STEM Tutor</title>
+ <style>
+  body {
+   margin: 0;
+   padding: 0;
+   background-color: #131314;
+   color: #e3e3e3;
+   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+   display: flex;
+   flex-direction: column;
+   height: 100vh;
+  }
+  header {
+   background-color: #1e1e1f;
+   padding: 15px 20px;
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   border-bottom: 1px solid #2d2d2e;
+  }
+  h1 {
+   margin: 0;
+   font-size: 20px;
+   color: #c58af9;
+   font-weight: 500;
+  }
+  .container {
+   display: flex;
+   flex: 1;
+   overflow: hidden;
+  }
+  .sidebar {
+   width: 250px;
+   background-color: #1e1e1f;
+   border-right: 1px solid #2d2d2e;
+   padding: 20px;
+   display: flex;
+   flex-direction: column;
+   gap: 15px;
+  }
+  .main-chat {
+   flex: 1;
+   display: flex;
+   flex-direction: column;
+   background-color: #131314;
+  }
+  .chat-history {
+   flex: 1;
+   padding: 20px;
+   overflow-y: auto;
+   display: flex;
+   flex-direction: column;
+   gap: 15px;
+  }
+  .message {
+   max-width: 75%;
+   padding: 12px 16px;
+   border-radius: 8px;
+   line-height: 1.5;
+  }
+  .user-message {
+   background-color: #2b2b2c;
+   align-self: flex-end;
+   border-bottom-right-radius: 2px;
+  }
+  .tutor-message {
+   background-color: #1e1e1f;
+   align-self: flex-start;
+   border-bottom-left-radius: 2px;
+   border: 1px solid #2d2d2e;
+  }
+  .input-panel {
+   padding: 20px;
+   background-color: #1e1e1f;
+   border-top: 1px solid #2d2d2e;
+   display: flex;
+   gap: 10px;
+  }
+  input[type="text"] {
+   flex: 1;
+   background-color: #131314;
+   border: 1px solid #2d2d2e;
+   border-radius: 6px;
+   color: #fff;
+   padding: 12px;
+   font-size: 15px;
+   outline: none;
+  }
+  input[type="text"]:focus {
+   border-color: #c58af9;
+  }
+  button {
+   background-color: #c58af9;
+   color: #131314;
+   border: none;
+   padding: 0 24px;
+   border-radius: 6px;
+   font-size: 15px;
+   font-weight: 600;
+   cursor: pointer;
+   transition: opacity 0.2s;
+  }
+  button:hover {
+   opacity: 0.9;
+  }
+  .status-badge {
+   background-color: rgba(197, 138, 249, 0.1);
+   color: #c58af9;
+   padding: 6px 12px;
+   border-radius: 20px;
+   font-size: 12px;
+   align-self: flex-start;
+   border: 1px solid rgba(197, 138, 249, 0.2);
+  }
+ </style>
 </head>
 <body>
-  <header>
-    <h1>CHRONOS // STEM Tutor</h1>
-    <div class="status-badge">Student Mode Active</div>
-  </header>
-  <div class="container">
-    <div class="sidebar">
-      <h3>Resources</h3>
-      <p style="font-size: 14px; color: #8e8e93; line-height: 1.4;">
-        Ask math, physics, or chemistry problems. Your tutor will guide you step-by-step to build first-principles understanding.
-      </p>
-    </div>
-    <div class="main-chat">
-      <div class="chat-history" id="chatHistory">
-        <div class="message tutor-message">
-          Hello! I am your CHRONOS STEM Tutor. What subject or problem are we looking at today?
-        </div>
-      </div>
-      <div class="input-panel">
-        <input type="text" id="userInput" placeholder="Ask a math or science question..." onkeypress="checkEnter(event)">
-        <button onclick="sendMessage()">Send</button>
-      </div>
-    </div>
+ <header>
+  <h1>CHRONOS // STEM Tutor</h1>
+  <div class="status-badge">Student Mode Active</div>
+ </header>
+ <div class="container">
+  <div class="sidebar">
+   <h3>Resources</h3>
+   <p style="font-size: 14px; color: #8e8e93; line-height: 1.4;">
+    Ask math, physics, or chemistry problems. Your tutor will guide you step-by-step to build first-principles understanding.
+   </p>
   </div>
-  <script>
-    function checkEnter(event) {
-      if (event.key === 'Enter') {
-        sendMessage();
-      }
-    }
+  <div class="main-chat">
+   <div class="chat-history" id="chatHistory">
+    <div class="message tutor-message">
+     Hello! I am your CHRONOS STEM Tutor. What subject or problem are we looking at today?
+    </div>
+   </div>
+   <div class="input-panel">
+    <input type="text" id="userInput" placeholder="Ask a math or science question..." onkeypress="checkEnter(event)">
+    <button onclick="sendMessage()">Send</button>
+   </div>
+  </div>
+ </div>
+ <script>
+  function checkEnter(event) {
+   if (event.key === 'Enter') {
+    sendMessage();
+   }
+  }
 
-    async function sendMessage() {
-      const input = document.getElementById('userInput');
-      const text = input.value.strip ? input.value.strip() : input.value.trim();
-      if (!text) return;
+  async function sendMessage() {
+   const input = document.getElementById('userInput');
+   const text = input.value.strip ? input.value.strip() : input.value.trim();
+   if (!text) return;
 
-      // Append User Message
-      const history = document.getElementById('chatHistory');
-      const userDiv = document.createElement('div');
-      userDiv.className = 'message user-message';
-      userDiv.textContent = text;
-      history.appendChild(userDiv);
-      input.value = '';
-      history.scrollTop = history.scrollHeight;
+   // Append User Message
+   const history = document.getElementById('chatHistory');
+   const userDiv = document.createElement('div');
+   userDiv.className = 'message user-message';
+   userDiv.textContent = text;
+   history.appendChild(userDiv);
+   input.value = '';
+   history.scrollTop = history.scrollHeight;
 
-      // Simple API call to backend
-      try {
-        const response = await fetch('/api/command', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ command: text })
-        });
-        const data = await response.json();
-        
-        // Append Tutor Response
-        const tutorDiv = document.createElement('div');
-        tutorDiv.className = 'message tutor-message';
-        tutorDiv.textContent = data.response || "No response received.";
-        history.appendChild(tutorDiv);
-        history.scrollTop = history.scrollHeight;
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  </script>
+   // Simple API call to backend
+   try {
+    const response = await fetch('/api/command', {
+     method: 'POST',
+     headers: { 'Content-Type': 'application/json' },
+     body: JSON.stringify({ command: text })
+    });
+    const data = await response.json();
+    
+    // Append Tutor Response
+    const tutorDiv = document.createElement('div');
+    tutorDiv.className = 'message tutor-message';
+    tutorDiv.textContent = data.response || "No response received.";
+    history.appendChild(tutorDiv);
+    history.scrollTop = history.scrollHeight;
+   } catch (e) {
+    console.error(e);
+   }
+  }
+ </script>
 </body>
 </html>
